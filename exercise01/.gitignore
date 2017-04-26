@@ -1,0 +1,6 @@
+rgb/
+figure_ground/
+.cproject
+.pydevproject
+.project
+__pycache__
