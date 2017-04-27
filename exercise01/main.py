@@ -1,3 +1,10 @@
+'''
+
+MLCV exercise 01
+Authors: Cristian Alexa, Dehui Lin
+
+'''
+
 from scipy import misc 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,155 +14,239 @@ from sklearn.ensemble import RandomForestClassifier
 
 def question02():
     
-    #indices of used images
-    imgNum = 5;
-    ind = range(1, 1+imgNum)
-    print(ind)
+    #index of training and testing images
+    train_idx = [1, 2, 4, 7, 9, 10, 13, 14, 15, 21]
+    test_idx = [75, 79, 80, 86, 87, 88, 89, 96, 109, 110]
     
     #load images, note that the images may of various widths/heights
+   
+    # list of rgb images
     train_imgs = []
     test_imgs = []
     
+    # list of ground truth images
     train_gt = []
     test_gt = []
     
-    cnt = 0
+    cnt = 0 #for indexing in list
     
-    for i in ind:
+    for i in train_idx:
+        
         fname = 'rgb/horse'+ str(i).zfill(3)+'.jpg'
         train_imgs.append(misc.imread(fname))
         
         fname = 'figure_ground/horse'+ str(i).zfill(3)+'.jpg'
+       
+        # resize the ground truth image to the same size as the rgb image
         train_gt.append(misc.imresize(misc.imread(fname), size=(train_imgs[cnt].shape[0], train_imgs[cnt].shape[1])))
+        
+        # map intensity from [0, 255] to [0, 1]
         train_gt[cnt] = np.clip(train_gt[cnt], a_min=0, a_max=1)
         
-        fname = 'rgb/horse'+ str(i+30).zfill(3)+'.jpg'
+        cnt+=1
+    
+    cnt = 0
+    
+    for i in test_idx:
+        
+        fname = 'rgb/horse'+ str(i).zfill(3)+'.jpg'
         test_imgs.append(misc.imread(fname))
         
-        fname = 'figure_ground/horse'+ str(i+30).zfill(3)+'.jpg'
+        fname = 'figure_ground/horse'+ str(i).zfill(3)+'.jpg'
+        
+        # resize the ground truth image to the same size as the rgb image
         test_gt.append(misc.imresize(misc.imread(fname), size=(test_imgs[cnt].shape[0], test_imgs[cnt].shape[1])))
+        
+        # map intensity from [0, 255] to [0, 1]
         test_gt[cnt] = np.clip(test_gt[cnt], a_min=0, a_max=1)
-        
-        #print(train_imgs[cnt].shape)
-        #print(train_gt[cnt].shape)
-        
-        '''
-        for m in range(test_gt[cnt].shape[0]):
-            for n in range(test_gt[cnt].shape[1]):
-                if test_gt[cnt][m,n] == 0:
-                    test_imgs[cnt][m,n,:] = 0
-
-        plt.figure()
-        plt.imshow(test_imgs[cnt])
-        plt.show()
-        
-        '''
         
         cnt+=1
     
     
-    # initialize training samples and targets
     nsamples = 0
-    nfeatures = 9 #gaussian, laplacian, median
+    nfeatures = 18 #gaussian, laplacian, median
     
+    # calculate the size of nsample array (i.e. total number of pixels of all training images)
     for i in range(0, len(train_imgs)):
-        dim = train_imgs[i].shape;
-        nsamples += dim[0] * dim[1]
+        img_height = train_imgs[i].shape[0]
+        img_width = train_imgs[i].shape[1]
+        nsamples += img_width * img_height
         
-        
+    # init sample array [nsamples, nfeatures]
     X = np.zeros(shape=(nsamples, nfeatures), dtype='float64')
+    # init target array [nsamples, category]
     Y = np.zeros(shape=nsamples, dtype='int64')
     
-    print(X.shape)
-    print(Y.shape)
     
-    #compute features
-    cnt = 0
+    start_idx = 0
+    end_idx = 0
+    
+    # fill in sample arrray and target array
     for i in range(0,len(train_imgs)):
         
         img_r = train_imgs[i][:,:,0]
         img_g = train_imgs[i][:,:,1]
         img_b = train_imgs[i][:,:,2]
         
-        size = train_imgs[i].shape[0] * train_imgs[i].shape[1];
+        numOfImgPix = train_imgs[i].shape[0] * train_imgs[i].shape[1]; # total number of pixels of current image
         
-        ft_r = skfilters.gaussian(img_r, sigma = 3).flatten()
-        ft_g = skfilters.gaussian(img_g, sigma = 3).flatten()
-        ft_b = skfilters.gaussian(img_b, sigma = 3).flatten()
+        end_idx = start_idx + numOfImgPix #ending index in sample array for current image
         
-        X[cnt:cnt+size, 0] = ft_r[:]
-        X[cnt:cnt+size, 1] = ft_g[:]
-        X[cnt:cnt+size, 2] = ft_b[:]
-        Y[cnt:cnt+size] = train_gt[i].flatten()     
+        # apply different filters to R, G, B channels separately and store the features to corresp. columns
+        X[start_idx:end_idx, 0] = skfilters.gaussian(img_r, sigma = 3).flatten()
+        X[start_idx:end_idx, 1] = skfilters.gaussian(img_g, sigma = 3).flatten()
+        X[start_idx:end_idx, 2] = skfilters.gaussian(img_b, sigma = 3).flatten()    
         
-        ft_r = skfilters.laplace(img_r, ksize=3).flatten()
-        ft_g = skfilters.laplace(img_g, ksize=3).flatten()
-        ft_b = skfilters.laplace(img_b, ksize=3).flatten()
+        X[start_idx:end_idx, 3] = skfilters.laplace(img_r, ksize=3).flatten()
+        X[start_idx:end_idx, 4] = skfilters.laplace(img_g, ksize=3).flatten()
+        X[start_idx:end_idx, 5] = skfilters.laplace(img_b, ksize=3).flatten()
         
-        X[cnt:cnt+size, 3] = ft_r[:]
-        X[cnt:cnt+size, 4] = ft_g[:]
-        X[cnt:cnt+size, 5] = ft_b[:]
-        Y[cnt:cnt+size] = train_gt[i].flatten()
+        X[start_idx:end_idx, 6] = skfilters.median(img_r, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 7] = skfilters.median(img_g, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 8] = skfilters.median(img_b, np.ones((3,3))).flatten()
         
-        ft_r = skfilters.median(img_r, np.ones((3,3))).flatten()
-        ft_g = skfilters.median(img_g, np.ones((3,3))).flatten()
-        ft_b = skfilters.median(img_b, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 9] = skfilters.gaussian(img_r, sigma = 5).flatten()
+        X[start_idx:end_idx, 10] = skfilters.gaussian(img_g, sigma = 5).flatten()
+        X[start_idx:end_idx, 11] = skfilters.gaussian(img_b, sigma = 5).flatten()    
         
-        X[cnt:cnt+size, 6] = ft_r[:]
-        X[cnt:cnt+size, 7] = ft_g[:]
-        X[cnt:cnt+size, 8] = ft_b[:]
-        Y[cnt:cnt+size] = train_gt[i].flatten()
+        X[start_idx:end_idx, 12] = skfilters.laplace(img_r, ksize=5).flatten()
+        X[start_idx:end_idx, 13] = skfilters.laplace(img_g, ksize=5).flatten()
+        X[start_idx:end_idx, 14] = skfilters.laplace(img_b, ksize=5).flatten()
         
-        cnt += size
+        X[start_idx:end_idx, 15] = skfilters.median(img_r, np.ones((5,5))).flatten()
+        X[start_idx:end_idx, 16] = skfilters.median(img_g, np.ones((5,5))).flatten()
+        X[start_idx:end_idx, 17] = skfilters.median(img_b, np.ones((5,5))).flatten()
         
-        '''
-        print(train_ft[i].dtype)
-        print(train_ft[i].shape)
-        plt.figure()
-        plt.imshow(train_ft[i][:,:,0], cmap='gray')
-        plt.show()
-        '''
+        # fill in the corresp. target category for each pixel
+        Y[start_idx:end_idx] = train_gt[i].flatten()
+        
+        start_idx += numOfImgPix #update the beginning index in sample arrayfor next image
     
-    rfc = RandomForestClassifier(n_estimators=5)
+    
+    # create random forest model
+    rfc = RandomForestClassifier(n_estimators=10)
     rfc.fit(X, Y)
     scores = rfc.score(X, Y)
+    print('score:', scores)
     
-    print(scores)
     
-    img = test_imgs[1]
-    img_size = img.shape[0]*img.shape[1]
+    print('Index\tHorseTotal\tHorsePixelRate\tBgdTotal\tBgdPixelRate\n')
     
-    data = np.zeros(shape=(img_size, nfeatures), dtype='float64')
+    # prepare test data
     
-    cnt = 0
-    data[cnt:cnt+img_size, 0] = skfilters.gaussian(img[:,:,0], sigma=3).flatten()
-    data[cnt:cnt+img_size, 1] = skfilters.gaussian(img[:,:,1], sigma=3).flatten()
-    data[cnt:cnt+img_size, 2] = skfilters.gaussian(img[:,:,2], sigma=3).flatten()
+    for i in range(len(test_imgs)):
+        
+        img_r = test_imgs[i][:,:,0]
+        img_g = test_imgs[i][:,:,1]
+        img_b = test_imgs[i][:,:,2]
+        
+        numOfImgPix = test_imgs[i].shape[0]*test_imgs[i].shape[1]
+        
+        data = np.zeros(shape=(numOfImgPix, nfeatures), dtype='float64')
+        
+        data[:, 0] = skfilters.gaussian(img_r, sigma=3).flatten()
+        data[:, 1] = skfilters.gaussian(img_g, sigma=3).flatten()
+        data[:, 2] = skfilters.gaussian(img_b, sigma=3).flatten()
+        
+        data[:, 3] = skfilters.laplace(img_r, ksize=3).flatten()
+        data[:, 4] = skfilters.laplace(img_g, ksize=3).flatten()
+        data[:, 5] = skfilters.laplace(img_b, ksize=3).flatten()
+        
+        data[:, 6] = skfilters.median(img_r, np.ones((3,3))).flatten()
+        data[:, 7] = skfilters.median(img_g, np.ones((3,3))).flatten()
+        data[:, 8] = skfilters.median(img_b, np.ones((3,3))).flatten()
+        
+        data[:, 9] = skfilters.gaussian(img_r, sigma=5).flatten()
+        data[:, 10] = skfilters.gaussian(img_g, sigma=5).flatten()
+        data[:, 11] = skfilters.gaussian(img_b, sigma=5).flatten()
+        
+        data[:, 12] = skfilters.laplace(img_r, ksize=5).flatten()
+        data[:, 13] = skfilters.laplace(img_g, ksize=5).flatten()
+        data[:, 14] = skfilters.laplace(img_b, ksize=5).flatten()
+        
+        data[:, 15] = skfilters.median(img_r, np.ones((5,5))).flatten()
+        data[:, 16] = skfilters.median(img_g, np.ones((5,5))).flatten()
+        data[:, 17] = skfilters.median(img_b, np.ones((5,5))).flatten()
+        
+        predicted = rfc.predict(data)
+        
+        predictedOnlyHorse = np.copy(predicted)
+        
+        det = compareResults(predictedOnlyHorse, test_gt[i].flatten())
+        
+        print(test_idx[i], '\t', det[0], '\t', det[1], '\t', det[2], '\t', det[3], '\n')
+        
+        
+        '''
+        # plot predictions
+        
+        plt.figure()
+        
+        plt.subplot(1,4,1)
+        plt.title('horse'+ str(test_idx[i]).zfill(3)+'.jpg')
+        plt.axis('off')
+        plt.imshow(test_imgs[i])
+        
+        plt.subplot(1,4,2)
+        plt.title('Ground truth')
+        plt.axis('off')
+        plt.imshow(test_gt[i], cmap='gray')
+        
+        plt.subplot(1,4,3)
+        plt.title('Prediction')
+        plt.axis('off')
+        predicted = predicted.reshape(test_imgs[i].shape[0], test_imgs[i].shape[1])
+        plt.imshow(predicted, cmap='gray')
+        
+        plt.subplot(1,4,4)
+        plt.title('Horse Only')
+        plt.axis('off')
+        predictedOnlyHorse = predictedOnlyHorse.reshape(test_imgs[i].shape[0], test_imgs[i].shape[1])
+        plt.imshow(predictedOnlyHorse, cmap='gray')
+        
+        plt.show()
+        
+        '''
+
+def compareResults(prediction, truth):
     
-    data[cnt:cnt+img_size, 3] = skfilters.laplace(img[:,:,0], ksize=3).flatten()
-    data[cnt:cnt+img_size, 4] = skfilters.laplace(img[:,:,1], ksize=3).flatten()
-    data[cnt:cnt+img_size, 5] = skfilters.laplace(img[:,:,2], ksize=3).flatten()
+    if len(prediction) != len(truth):
+        print('Error: comparing arrays with different sizes')
     
-    data[cnt:cnt+img_size, 6] = skfilters.median(img[:,:,0], np.ones((3,3))).flatten()
-    data[cnt:cnt+img_size, 7] = skfilters.median(img[:,:,1], np.ones((3,3))).flatten()
-    data[cnt:cnt+img_size, 8] = skfilters.median(img[:,:,2], np.ones((3,3))).flatten()
+    totalHorsePix = 0
+    totalBgdPix = 0
     
-    predicted = rfc.predict(data)
-    print(img.shape)
-    print(predicted.dtype)
-    print(predicted.shape)
-    print(np.max(predicted))
+    rate = [0, 0, 0, 0]
     
-    predicted = predicted.reshape(img.shape[0], img.shape[1])
+    sumOfCorrectHorse = 0
+    sumOfCorrectBgd = 0
     
-    plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(img)
-    plt.subplot(1,3,2)
-    plt.imshow(test_gt[1], cmap='gray')
-    plt.subplot(1,3,3)
-    plt.imshow(predicted, cmap='gray')
-    plt.show()
+    for m in range(len(truth)):
+        if truth[m] == 1:
+            
+            totalHorsePix += 1
+            
+            if prediction[m] == truth[m]:
+                sumOfCorrectHorse += 1
+                
+        elif truth[m] == 0:
+            
+            totalBgdPix += 1
+            
+            if prediction[m] == truth[m]:
+                sumOfCorrectBgd += 1
+            else:
+                prediction[m] = 0
+    
+    rate[0] = totalHorsePix
+    rate[1] = totalBgdPix
+    rate[2] = 1.0 * sumOfCorrectHorse / totalHorsePix
+    rate[3] = 1.0 * sumOfCorrectBgd / totalBgdPix
+    
+    if (totalHorsePix+totalBgdPix) != len(truth):
+        print('Error: truth pixels value is unequal to 0 or 1')
+    
+    return rate
     
 
 def main():
