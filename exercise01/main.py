@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 def question02():
     
     #index of training and testing images
-    train_idx = [1, 2, 4, 7, 9, 10, 13, 14, 15, 21]
+    train_idx = [1, 2, 5, 7, 9, 10, 13, 14, 15, 21]
     test_idx = [75, 79, 80, 86, 87, 88, 89, 96, 109, 110]
     
     #load images, note that the images may of various widths/heights
@@ -93,17 +93,26 @@ def question02():
         end_idx = start_idx + numOfImgPix #ending index in sample array for current image
         
         # apply different filters to R, G, B channels separately and store the features to corresp. columns
-        X[start_idx:end_idx, 0] = skfilters.gaussian(img_r, sigma = 3).flatten()
-        X[start_idx:end_idx, 1] = skfilters.gaussian(img_g, sigma = 3).flatten()
-        X[start_idx:end_idx, 2] = skfilters.gaussian(img_b, sigma = 3).flatten()    
+        ft_rg = skfilters.gaussian(img_r, sigma = 3).flatten()
+        X[start_idx:end_idx, 0] = ft_rg
+        ft_gg = skfilters.gaussian(img_g, sigma = 3).flatten()
+        X[start_idx:end_idx, 1] = ft_gg
+        ft_bg = skfilters.gaussian(img_b, sigma = 3).flatten()
+        X[start_idx:end_idx, 2] = ft_bg  
         
-        X[start_idx:end_idx, 3] = skfilters.laplace(img_r, ksize=3).flatten()
-        X[start_idx:end_idx, 4] = skfilters.laplace(img_g, ksize=3).flatten()
-        X[start_idx:end_idx, 5] = skfilters.laplace(img_b, ksize=3).flatten()
+        ft_rl = skfilters.laplace(img_r, ksize=3).flatten()
+        X[start_idx:end_idx, 3] = ft_rl
+        ft_gl = skfilters.laplace(img_g, ksize=3).flatten()
+        X[start_idx:end_idx, 4] = ft_gl
+        ft_bl = skfilters.laplace(img_b, ksize=3).flatten()
+        X[start_idx:end_idx, 5] = ft_bl
         
-        X[start_idx:end_idx, 6] = skfilters.median(img_r, np.ones((3,3))).flatten()
-        X[start_idx:end_idx, 7] = skfilters.median(img_g, np.ones((3,3))).flatten()
-        X[start_idx:end_idx, 8] = skfilters.median(img_b, np.ones((3,3))).flatten()
+        ft_rm = skfilters.median(img_r, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 6] = ft_rm
+        ft_bm = skfilters.median(img_g, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 7] = ft_bm
+        ft_gm = skfilters.median(img_b, np.ones((3,3))).flatten()
+        X[start_idx:end_idx, 8] = ft_gm
         
         X[start_idx:end_idx, 9] = skfilters.gaussian(img_r, sigma = 5).flatten()
         X[start_idx:end_idx, 10] = skfilters.gaussian(img_g, sigma = 5).flatten()
@@ -120,6 +129,91 @@ def question02():
         # fill in the corresp. target category for each pixel
         Y[start_idx:end_idx] = train_gt[i].flatten()
         
+        '''
+        #plot computed featue image
+        
+        if i==2:
+            plt.figure()
+            plt.subplot(1,4,1)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('initial picture')
+            plt.imshow( train_imgs[i])
+            plt.subplot(1,4,2)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel R') 
+            plt.imshow(img_r,cmap= 'gray')
+            plt.subplot(1,4,3)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel G')
+            plt.imshow(img_g,cmap= 'gray')
+            plt.subplot(1,4,4)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel B')
+            plt.imshow(img_b,cmap= 'gray')
+            plt.show()
+            
+            
+            plt.figure()
+            plt.subplot(1,3,1)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel R')
+            plt.imshow(np.reshape(ft_rg,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,2)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel G')
+            plt.imshow(np.reshape(ft_gg,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,3)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel B')
+            plt.imshow(np.reshape(ft_bg,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.show()
+            
+            
+            plt.figure()
+            plt.subplot(1,3,1)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel R')
+            plt.imshow(np.reshape(ft_rl,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,2)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel G')
+            plt.imshow(np.reshape(ft_gl,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,3)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel B')
+            plt.imshow(np.reshape(ft_bl,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.show()
+            
+            
+            plt.figure()
+            plt.subplot(1,3,1)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel R')
+            plt.imshow(np.reshape(ft_rm,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,2)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel G')
+            plt.imshow(np.reshape(ft_gm,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.subplot(1,3,3)
+            plt.xticks([], [])
+            plt.yticks([], [])
+            plt.title('channel B')
+            plt.imshow(np.reshape(ft_bm,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
+            plt.show()
+        
+        '''
         start_idx += numOfImgPix #update the beginning index in sample arrayfor next image
     
     
@@ -222,17 +316,21 @@ def compareResults(prediction, truth):
     sumOfCorrectBgd = 0
     
     for m in range(len(truth)):
+        # pixel is horse 
         if truth[m] == 1:
             
             totalHorsePix += 1
             
+            # when prediction is correct
             if prediction[m] == truth[m]:
                 sumOfCorrectHorse += 1
-                
+         
+        # pixel is background       
         elif truth[m] == 0:
             
             totalBgdPix += 1
             
+            #when prediction is correct
             if prediction[m] == truth[m]:
                 sumOfCorrectBgd += 1
             else:
