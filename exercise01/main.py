@@ -54,47 +54,45 @@ def question02():
         
         fname = 'figure_ground/horse'+ str(i).zfill(3)+'.jpg'
         
-        # resize the ground truth image to the same size as the rgb image
+         # resize the ground truth image to the same size as the rgb image
         test_gt.append(misc.imresize(misc.imread(fname), size=(test_imgs[cnt].shape[0], test_imgs[cnt].shape[1])))
         
-        # map intensity from [0, 255] to [0, 1]
-        test_gt[cnt] = np.clip(test_gt[cnt], a_min=0, a_max=1)
+       
+        test_gt[cnt] = np.clip(test_gt[cnt], a_min=0, a_max=1)                  # map intensity from [0, 255] to [0, 1]
         
         cnt+=1
     
     
     nsamples = 0
-    nfeatures = 18 #gaussian, laplacian, median
+    nfeatures = 18                                                              #gaussian, laplacian, median
     
-    # calculate the size of nsample array (i.e. total number of pixels of all training images)
-    for i in range(0, len(train_imgs)):
-        img_height = train_imgs[i].shape[0]
+    
+    for i in range(0, len(train_imgs)):                                         # calculate the size of nsample array
+        img_height = train_imgs[i].shape[0                                      # (i.e. total number of pixels of all training images)
         img_width = train_imgs[i].shape[1]
         nsamples += img_width * img_height
         
-    # init sample array [nsamples, nfeatures]
-    X = np.zeros(shape=(nsamples, nfeatures), dtype='float64')
-    # init target array [nsamples, category]
-    Y = np.zeros(shape=nsamples, dtype='int64')
+    X = np.zeros(shape=(nsamples, nfeatures), dtype='float64')                  # init sample array [nsamples, nfeatures]
+    Y = np.zeros(shape=nsamples, dtype='int64')                                 # init target array [nsamples, category]
     
     
     start_idx = 0
     end_idx = 0
     
-    # fill in sample arrray and target array
-    for i in range(0,len(train_imgs)):
+    
+    for i in range(0,len(train_imgs)):                                          # fill in sample arrray and target array
         
         img_r = train_imgs[i][:,:,0]
         img_g = train_imgs[i][:,:,1]
         img_b = train_imgs[i][:,:,2]
         
-        numOfImgPix = train_imgs[i].shape[0] * train_imgs[i].shape[1]; # total number of pixels of current image
+        numOfImgPix = train_imgs[i].shape[0] * train_imgs[i].shape[1];          # total number of pixels of current image
         
-        end_idx = start_idx + numOfImgPix #ending index in sample array for current image
+        end_idx = start_idx + numOfImgPix                                       #ending index in sample array for current image
         
-        # apply different filters to R, G, B channels separately and store the features to corresp. columns
-        ft_rg = skfilters.gaussian(img_r, sigma = 3).flatten()
-        X[start_idx:end_idx, 0] = ft_rg
+        
+        ft_rg = skfilters.gaussian(img_r, sigma = 3).flatten()                  # apply different filters to R, G, B channels separately and 
+        X[start_idx:end_idx, 0] = ft_rg                                         # store the features to corresp. columns
         ft_gg = skfilters.gaussian(img_g, sigma = 3).flatten()
         X[start_idx:end_idx, 1] = ft_gg
         ft_bg = skfilters.gaussian(img_b, sigma = 3).flatten()
@@ -125,19 +123,16 @@ def question02():
         X[start_idx:end_idx, 15] = skfilters.median(img_r, np.ones((5,5))).flatten()
         X[start_idx:end_idx, 16] = skfilters.median(img_g, np.ones((5,5))).flatten()
         X[start_idx:end_idx, 17] = skfilters.median(img_b, np.ones((5,5))).flatten()
+       
+        Y[start_idx:end_idx] = train_gt[i].flatten()                            # fill in the corresp. target category for each pixel
         
-        # fill in the corresp. target category for each pixel
-        Y[start_idx:end_idx] = train_gt[i].flatten()
-        
-        '''
-        #plot computed featue image
-        
+        '''  
         if i==2:
             plt.figure()
             plt.subplot(1,4,1)
             plt.xticks([], [])
             plt.yticks([], [])
-            plt.title('initial picture')
+            plt.title('initial picture')                                         #plot computed feature image
             plt.imshow( train_imgs[i])
             plt.subplot(1,4,2)
             plt.xticks([], [])
@@ -212,13 +207,11 @@ def question02():
             plt.title('channel B')
             plt.imshow(np.reshape(ft_bm,(img_r.shape[0],img_r.shape[1] )),cmap='gray')
             plt.show()
-        
         '''
-        start_idx += numOfImgPix #update the beginning index in sample arrayfor next image
+        start_idx += numOfImgPix                                                #update the beginning index in sample array for next image
     
     
-    # create random forest model
-    rfc = RandomForestClassifier(n_estimators=10)
+    rfc = RandomForestClassifier(n_estimators=10)                               # create random forest model
     rfc.fit(X, Y)
     scores = rfc.score(X, Y)
     print('score:', scores)
@@ -226,9 +219,9 @@ def question02():
     
     print('Index\tHorseTotal\tHorsePixelRate\tBgdTotal\tBgdPixelRate\n')
     
-    # prepare test data
     
-    for i in range(len(test_imgs)):
+    
+    for i in range(len(test_imgs)):                                             # prepare test data
         
         img_r = test_imgs[i][:,:,0]
         img_g = test_imgs[i][:,:,1]
@@ -246,7 +239,7 @@ def question02():
         data[:, 4] = skfilters.laplace(img_g, ksize=3).flatten()
         data[:, 5] = skfilters.laplace(img_b, ksize=3).flatten()
         
-        data[:, 6] = skfilters.median(img_r, np.ones((3,3))).flatten()
+        data[:, 6] = skfilters.median(img_r, np.ones((3,3))).flatten()          
         data[:, 7] = skfilters.median(img_g, np.ones((3,3))).flatten()
         data[:, 8] = skfilters.median(img_b, np.ones((3,3))).flatten()
         
@@ -272,12 +265,10 @@ def question02():
         
         
         '''
-        # plot predictions
-        
         plt.figure()
         
         plt.subplot(1,4,1)
-        plt.title('horse'+ str(test_idx[i]).zfill(3)+'.jpg')
+        plt.title('horse'+ str(test_idx[i]).zfill(3)+'.jpg')                    # In this block we plot predictions   
         plt.axis('off')
         plt.imshow(test_imgs[i])
         
@@ -305,7 +296,7 @@ def question02():
 def compareResults(prediction, truth):
     
     if len(prediction) != len(truth):
-        print('Error: comparing arrays with different sizes')
+        print('Error: comparing arrays with different sizes')                   
     
     totalHorsePix = 0
     totalBgdPix = 0
@@ -315,8 +306,8 @@ def compareResults(prediction, truth):
     sumOfCorrectHorse = 0
     sumOfCorrectBgd = 0
     
-    for m in range(len(truth)):
-        # pixel is horse 
+    for m in range(len(truth)):                                                 #  In this block are computed the accuracies of predicting 
+        # pixel is horse                                                            horse and background pixels. 
         if truth[m] == 1:
             
             totalHorsePix += 1
@@ -347,7 +338,7 @@ def compareResults(prediction, truth):
     return rate
     
 
-def main():
+def main():                                                   
     question02();
 
 if __name__ == '__main__':
