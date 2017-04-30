@@ -88,13 +88,16 @@ if __name__ == "__main__":
     train_gt = [ndimage.imread(f) for f in ground_truth_path]
     test_gt  = [ndimage.imread(f) for f in ground_truth_test_path]
 
-
+    ##ldh: data from train_gt and test_gt are from 0 to 255 (not only 0 and 255)
 
     # make the training images have the correct shape
     for i in range(len(train_gt)):
         gt = resize(train_gt[i], train_raw[i].shape[0:2])
+        ##ldh: after resizing, gt is float64 and range from 0.0 to 1.0
         gt = numpy.round(gt,0)
+        ##ldh: after rounding, it will be either 0.0 or 1.0
         train_gt[i] = gt.astype('uint8')
+        ##ldh: after astype, it will be either 0 or 1
 
     for i in range(len(test_gt)):
         gt = resize(test_gt[i], test_raw[i].shape[0:2])
@@ -134,10 +137,12 @@ if __name__ == "__main__":
 
     # predict
     for i in range(len(test_raw)):
-        
+        ##ldh: tuple concatenation
         shape = test_raw[i].shape[0:2] + (2,)
         #print("test_features[i]",test_features[i].shape)
         pred = rf.predict_proba(test_features[i]).reshape(shape)
+        
+        ##ldh: resultant probability is between 0.0 and 1.0 for each class
         print(pred.shape)
 
         skimage.io.imsave("out%d.png"%i, pred[:,:,0])
