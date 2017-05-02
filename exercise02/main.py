@@ -344,6 +344,12 @@ def compareResults(prediction, truth):
     
     return rate
 
+def potts(a, b):
+    if a == b:
+        return 0
+    else:
+        return 1
+
 def iterated_conditional_modes(unaries, beta, labels = None):
     shape = unaries.shape[0:2]
     n_labels = unaries.shape[2]
@@ -353,7 +359,7 @@ def iterated_conditional_modes(unaries, beta, labels = None):
         # of the best predicted label (higher probability)
         labels = numpy.argmin(unaries, axis=2)
 
-    #print(labels)
+    print(labels)
     
     continue_search = True
     while(continue_search):
@@ -372,9 +378,14 @@ def iterated_conditional_modes(unaries, beta, labels = None):
 
                     # unary terms
                     # energy += TODO
+                    energy += beta * unaries[x0, x1, l]
 
                     # pairwise terms
                     # energy += TODO
+                    energy += (1-beta) * potts(labels[x0, x1], labels[x0-1, x1])
+                    energy += (1-beta) * potts(labels[x0, x1], labels[x0+1, x1])
+                    energy += (1-beta) * potts(labels[x0, x1], labels[x0, x1-1])
+                    energy += (1-beta) * potts(labels[x0, x1], labels[x0, x1+1])
 
                     if energy < min_energy:
                         min_energy = energy
@@ -391,22 +402,25 @@ def main():
 
 if __name__ == '__main__':
 
-    shape = [2, 3]
-    n_labels = 1
+    shape = [3, 3]
+    n_labels = 2
 
     # unaries
     unaries = numpy.random.rand(shape[0], shape[1], n_labels)
 
-    print(unaries)
+    #print(unaries)
     
     # convert the probability to energy values
     unaries = -numpy.log(unaries)
 
-    print(unaries)
+    #print(unaries)
     
     # regularizer strength
     beta = 0.01
 
     labels = iterated_conditional_modes(unaries, beta=beta)
+
+    print('\n')
+    print(labels)
     
     #main()
