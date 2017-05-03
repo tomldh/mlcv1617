@@ -429,6 +429,8 @@ if __name__ == '__main__':
     for i in range(len(ppred)):
         
         '''
+        print('test image: ', i, '\n')
+        
         plt.figure()
         plt.subplot(1,4,1)
         plt.title('Predicted Probability')
@@ -441,7 +443,7 @@ if __name__ == '__main__':
         
         unaries = -np.log(unaries)
         
-        for beta in [1.0, 0.7, 0.1]:
+        for beta in [1.0, 0.8, 0.1]:
             pred.append(iterated_conditional_modes(unaries, beta=beta))
         
         '''
@@ -451,7 +453,7 @@ if __name__ == '__main__':
         plt.imshow(pred[i*3], cmap='gray')
         
         plt.subplot(1,4,3)
-        plt.title('beta(0.5)')
+        plt.title('beta(0.8)')
         plt.axis('off')
         plt.imshow(pred[i*3+1], cmap='gray')
         
