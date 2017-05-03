@@ -1,10 +1,10 @@
 '''
 
-MLCV exercise 01
+MLCV exercise 02
 Authors: Cristian Alexa, Dehui Lin
 
 '''
-'''
+
 from scipy import misc 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,11 +12,10 @@ import skimage.filters as skfilters
 
 from sklearn.ensemble import RandomForestClassifier
 
-'''
+import time
 
-import numpy
 
-def question02():
+def ex1_question02():
     
     #index of training and testing images
     train_idx = [1, 2, 5, 7, 9, 10, 13, 14, 15, 21]
@@ -32,7 +31,7 @@ def question02():
     train_gt = []
     test_gt = []
 
-    # list of predicted images
+    # list of predicted images for ICM optimization
     list_pred = []
     
     cnt = 0 #for indexing in list
@@ -224,7 +223,7 @@ def question02():
     print('score:', scores)
     
     
-    print('Index\tHorseTotal\tHorsePixelRate\tBgdTotal\tBgdPixelRate\n')
+    #print('Index\tHorseTotal\tHorsePixelRate\tBgdTotal\tBgdPixelRate\n')
     
     
     
@@ -262,14 +261,24 @@ def question02():
         data[:, 16] = skfilters.median(img_g, np.ones((5,5))).flatten()
         data[:, 17] = skfilters.median(img_b, np.ones((5,5))).flatten()
         
-        predicted = rfc.predict(data)
+        # predict class probability
+        # shape: (number of pixels, 2)
+        predicted = rfc.predict_proba(data)
         
+        img_size = test_imgs[i].shape[0:2]
+        
+        # reshape the predicted img and save to list
+        list_pred.append(np.dstack((predicted[:,0].reshape(img_size[0], img_size[1]), predicted[:,1].reshape(img_size[0], img_size[1]))))
+        
+        
+        '''
         predictedOnlyHorse = np.copy(predicted)
         
         det = compareResults(predictedOnlyHorse, test_gt[i].flatten())
         
         print(test_idx[i], '\t', det[0], '\t', det[1], '\t', det[2], '\t', det[3], '\n')
         
+        '''
         
         '''
         plt.figure()
@@ -299,6 +308,8 @@ def question02():
         plt.show()
         
         '''
+        
+    return list_pred
 
 def compareResults(prediction, truth):
     
@@ -357,16 +368,21 @@ def iterated_conditional_modes(unaries, beta, labels = None):
     if labels is None:
         # return the index (0-bgd,1-horse)
         # of the best predicted label (higher probability)
-        labels = numpy.argmin(unaries, axis=2)
-
-    print(labels)
+        labels = np.argmin(unaries, axis=2)
+    
+    start_time = time.time()
     
     continue_search = True
     while(continue_search):
         continue_search = False
+        
+        # excluding the boundary
         for x0 in range(1, shape[0]-1):
             for x1 in range (1, shape[1]-1):
-
+                
+                #if labels[x0,x1]==labels[x0-1, x1] and labels[x0,x1]==labels[x0+1, x1] and labels[x0,x1]==labels[x0, x1-1] and labels[x0,x1]==labels[x0, x1+1]:
+                #    continue
+                
                 current_label = labels[x0, x1]
                 min_energy = float('inf')
                 best_label = None
@@ -377,15 +393,13 @@ def iterated_conditional_modes(unaries, beta, labels = None):
                     energy = 0.0
 
                     # unary terms
-                    # energy += TODO
                     energy += beta * unaries[x0, x1, l]
 
                     # pairwise terms
-                    # energy += TODO
-                    energy += (1-beta) * potts(labels[x0, x1], labels[x0-1, x1])
-                    energy += (1-beta) * potts(labels[x0, x1], labels[x0+1, x1])
-                    energy += (1-beta) * potts(labels[x0, x1], labels[x0, x1-1])
-                    energy += (1-beta) * potts(labels[x0, x1], labels[x0, x1+1])
+                    energy += (1-beta) * potts(l, labels[x0-1, x1])
+                    energy += (1-beta) * potts(l, labels[x0+1, x1])
+                    energy += (1-beta) * potts(l, labels[x0, x1-1])
+                    energy += (1-beta) * potts(l, labels[x0, x1+1])
 
                     if energy < min_energy:
                         min_energy = energy
@@ -394,33 +408,57 @@ def iterated_conditional_modes(unaries, beta, labels = None):
                 if best_label != current_label:
                     labels[x0, x1] = best_label
                     continue_search = True
+    
+    elapsed = time.time() - start_time
+    
+    #print(elapsed)
+    
     return labels
     
 
 def main():                                                   
-    question02();
+    ex1_question02();
 
 if __name__ == '__main__':
-
-    shape = [3, 3]
-    n_labels = 2
-
-    # unaries
-    unaries = numpy.random.rand(shape[0], shape[1], n_labels)
-
-    #print(unaries)
     
-    # convert the probability to energy values
-    unaries = -numpy.log(unaries)
-
-    #print(unaries)
+    # class probability result of test images from exercise 1 
+    ppred = ex1_question02()
     
-    # regularizer strength
-    beta = 0.01
-
-    labels = iterated_conditional_modes(unaries, beta=beta)
-
-    print('\n')
-    print(labels)
+    pred = []
     
-    #main()
+    for i in range(len(ppred)):
+        
+        '''
+        plt.figure()
+        plt.subplot(1,4,1)
+        plt.title('Predicted Probability')
+        plt.axis('off')
+        plt.imshow(ppred[i][:,:,1], cmap='gray')
+        '''
+        
+        unaries = ppred[i]
+        
+        unaries = -np.log(unaries)
+        
+        for beta in [1.0, 0.5, 0.1]:
+            pred.append(iterated_conditional_modes(unaries, beta=beta))
+        
+        '''
+        plt.subplot(1,4,2)
+        plt.title('beta(1.0)')
+        plt.axis('off')
+        plt.imshow(pred[i*3], cmap='gray')
+        
+        plt.subplot(1,4,3)
+        plt.title('beta(0.5)')
+        plt.axis('off')
+        plt.imshow(pred[i*3+1], cmap='gray')
+        
+        plt.subplot(1,4,4)
+        plt.title('beta(0.1)')
+        plt.axis('off')
+        plt.imshow(pred[i*3+2], cmap='gray')
+
+        plt.show()
+        '''
+
