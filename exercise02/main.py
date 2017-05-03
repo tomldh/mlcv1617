@@ -436,11 +436,12 @@ if __name__ == '__main__':
         plt.imshow(ppred[i][:,:,1], cmap='gray')
         '''
         
-        unaries = ppred[i]
+        # clip the probability
+        unaries = np.clip(ppred[i], 0.0001, 0.9999)
         
         unaries = -np.log(unaries)
         
-        for beta in [1.0, 0.5, 0.1]:
+        for beta in [1.0, 0.7, 0.1]:
             pred.append(iterated_conditional_modes(unaries, beta=beta))
         
         '''
