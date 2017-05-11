@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import linprog
 import sys
 
+# to return the energy of unary factor
 def unary(vnum):
     
     if vnum == 0:
@@ -17,6 +18,7 @@ def unary(vnum):
         print('Error: unrecognized input label for unary potential')
         sys.exit()
 
+# to return energy of pairwise factor
 def pairwise(vnum1, vnum2, beta):
     
     if vnum1 == 0 and vnum2 == 0:
@@ -38,9 +40,12 @@ def pairwise(vnum1, vnum2, beta):
 
 if __name__ == '__main__':
     
+    # 1.0-attractive, -1.0-repulsive
     beta = 1.0
     
     # indicator variable indices
+    # (v1, v2, state of v1, state of v2)
+    # in the case of unary, v1=v2
     yidx = {(0,0,0,0): 0,
             (0,0,1,1): 1,
             (1,1,0,0): 2,
@@ -67,7 +72,7 @@ if __name__ == '__main__':
     # three variables
     var = [0, 1, 2]
     
-    # fill in coefficient matrix
+    # fill in coefficient matrix C
     for i in var:
         #unary energy
         C[yidx[(i,i,0,0)]] = unary(i)[0]
@@ -138,13 +143,11 @@ if __name__ == '__main__':
     print(b)
     
     print('\n')
+    print('beta: ', beta)
     
     res = linprog(c=C, A_eq=A, b_eq=b, options={"disp": True})
     
     print(res)
-        
-        
-        
         
         
         
