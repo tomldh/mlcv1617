@@ -8,6 +8,8 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -24,15 +26,17 @@ from datetime import datetime
 
 import os
 import logging, argparse
-from cryptography.hazmat.primitives.asymmetric.padding import PSS
+import time
+
 
 # function to show an image
-def imshow(img):
-    plt.figure()
-    img = img / 2 + 0.5 # un-normalize
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1,2,0))) # previously tensor stores (channel, width, height)
-    #plt.show()
+def imshow(img, use_gui=False):
+    if use_gui:
+        plt.figure()
+        img = img / 2 + 0.5 # un-normalize
+        npimg = img.numpy()
+        plt.imshow(np.transpose(npimg, (1,2,0))) # previously tensor stores (channel, width, height)
+        plt.show()
 
 def logMsg(msg, use_log=False, printToConsole=True):
     
@@ -106,7 +110,7 @@ class Net(nn.Module):
         logMsg('Total parameters: {}'.format(sumParam), use_log)
         logMsg('==============================================\n', use_log)
 
-def visualizeWeights(weight, use_gui=True, fprefix='', fname=''):
+def visualizeWeights(weight, use_gui=False, fprefix='', fname=''):
     
     wnp = weight.numpy()
     vmin = np.amin(wnp)
@@ -120,7 +124,7 @@ def visualizeWeights(weight, use_gui=True, fprefix='', fname=''):
             for j in range(wnp.shape[1]):
                 ax = plt.subplot(wnp.shape[0], wnp.shape[1], idx)
                 ax.axis('off')
-                ax.imshow(wnp[i, j, :], cmap='gray', vmin=vmin, vmax=vmax)
+                ax.imshow(wnp[i, j, :], cmap='gray', vmin=vmin, vmax=vmax, interpolation=None)
                 idx += 1
                 
     plt.subplots_adjust(wspace=0, hspace=0)
@@ -216,10 +220,10 @@ def saveCheckpoint(filename, epoch, net, optim, history, use_cuda):
     
     torch.save(state, filename+'.md.tar')
     
-def plotStatistics(history, use_gui=True, fprefix='', fname=''):
+def plotStatistics(history, use_gui=False, fprefix='', fname=''):
 
     ''' plots '''
-    plt.figure()
+    #plt.figure()
     plt.plot(range(len(history['train_loss'])), history['train_loss'], color='r', label='train_loss')
     plt.title('Training Loss')
     plt.xlabel('epoch')
@@ -231,7 +235,7 @@ def plotStatistics(history, use_gui=True, fprefix='', fname=''):
     else:
         plt.savefig('{0}_{1}_train_loss.png'.format(fprefix, fname))
     
-    plt.figure()
+    #plt.figure()
     plt.plot(history['train_acc'], color='b', label='train_acc')
     plt.plot(history['val_acc'], color='r', label='val_acc')
     plt.title('Training/Validation Accuracy')
@@ -259,7 +263,7 @@ if __name__ == '__main__':
     parser.add_argument('--doNotSaveModel', default=True, action='store_false', dest='saveModel', help='do not save model')
     parser.add_argument('--save-interval', '-si', default=2, type=int, dest='save_interval', help='save the model at some epoch interval')
     parser.add_argument('--model-name', '-f', default=datetime.now().strftime('%Y_%m_%d_%H_%M'), type=str, dest='modelName', help='name of model to save')
-    parser.add_argument('--no-gui', default=True, action='store_false', dest='gui', help='no gui available')
+    parser.add_argument('--gui', default=False, action='store_true', dest='gui', help='use gui to display graphs')
     parser.add_argument('--resume', '-r', default=False, action='store_true', dest='resume', help='resume training')
     
     args = parser.parse_args()
@@ -295,12 +299,13 @@ if __name__ == '__main__':
     
     logMsg('Training and testing data loaded successfully.', args.log)
     
+    '''
     # show a sample
     dataiter = iter(trainloader)
     images, labels = dataiter.next()
     imshow(torchvision.utils.make_grid(images))
     print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
-    
+    '''
     
     if args.checkpoint:
         
@@ -322,8 +327,8 @@ if __name__ == '__main__':
         netHist = chkpt['history']
         
         ''' post analysis '''
-        plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
         visualizeWeights(net.conv1.weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
+        plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
         
         if not args.resume:
             sys.exit(0)
@@ -340,7 +345,12 @@ if __name__ == '__main__':
 
     lossFcn = nn.CrossEntropyLoss() #loss function
     
+    logMsg('Start training', args.log)
+    begintime = time.time()
+    
     for epoch in range(start_epoch, start_epoch+epochs):
+        
+        epoch_begin = time.time()
         
         logMsg('Epoch {0}:'.format(epoch+1), args.log)
         
@@ -348,24 +358,26 @@ if __name__ == '__main__':
         
         validate(epoch, net, testloader, netHist, use_cuda)
         
+        logMsg('used {0:.3f} sec.'.format(time.time()-epoch_begin), args.log)
+        
         if (epoch+1) % args.save_interval == 0 and args.saveModel:
             saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
             logMsg('Checkpoint saved.', args.log)
             # output plot to check 
             plotStatistics(netHist, False, args.modelName, 'epoch{0}'.format(epoch+1))
-    
-    logMsg('Finished training', args.log)
+        
+        
+    logMsg('Finished training. Total time used: {0:.3f} min'.format((time.time()-begintime)/60), args.log)
     
     if args.saveModel:
         saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
         logMsg('Checkpoint saved.', args.log)
     
-    
     #convert back to cpu 
     if use_cuda:
         net.cpu()
         
-    visualizeWeights(net.conv1.weight.data, args.gui, args.modelName, 'conv1_weight')
+    #visualizeWeights(net.conv1.weight.data, args.gui, args.modelName, 'conv1_weight')
     plotStatistics(netHist, args.gui, args.modelName, 'epoch{0}'.format(epoch+1))
     
     pass
