@@ -362,7 +362,7 @@ if __name__ == '__main__':
         
         if (epoch+1) % args.save_interval == 0 and args.saveModel:
             saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
-            logMsg('Checkpoint saved.', args.log)
+            logMsg('Checkpoint saved. Subtotal time used: {0:.3f} min'.format((time.time()-begintime)/60), args.log)
             # output plot to check 
             plotStatistics(netHist, False, args.modelName, 'epoch{0}'.format(epoch+1))
         
