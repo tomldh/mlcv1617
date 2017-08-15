@@ -252,7 +252,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning-rate', '-lr', default=0.001, type=float, dest='lr', help='learning rate')
     parser.add_argument('--checkpoint', '-cp', default='', type=str, dest='checkpoint', help='resume from given checkpoint')
     parser.add_argument('--no-cuda', default=True, action='store_false', dest='cuda', help='do not use cuda')
-    parser.add_argument('--batch-size', '-b', default=4, type=int, dest='batch_size', help='batch size')
+    parser.add_argument('--train-batch-size', '-tb', default=4, type=int, dest='train_batch_size', help='training batch size')
+    parser.add_argument('--validate-batch-size', '-vb', default=4, type=int, dest='val_batch_size', help='testing batch size')
     parser.add_argument('--epochs', default=6, type=int, dest='epochs', help='number of training epochs')
     parser.add_argument('--optimizer', '-o', default='SGD', type=str, dest='optimizer', help='optimzer')
     parser.add_argument('--no-log', default=True, action='store_false', dest='log', help='no logging')
@@ -282,14 +283,26 @@ if __name__ == '__main__':
             logMsg('No cuda device is available. Use CPU.', args.log)
     else:
         use_cuda = False
-        
+    
+    
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ]) 
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = torchvision.datasets.CIFAR10(root='./data', transform=transform);
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2) # each item contains a batch of 4 images and labels
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+    trainset = torchvision.datasets.CIFAR10(root='./data', transform=transform_train);
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2) # each item contains a batch of 4 images and labels
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=transform_test)
+    testloader = torch.utils.data.DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     
