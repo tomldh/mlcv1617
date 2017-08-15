@@ -1,0 +1,186 @@
+DEBUG:root:Arguments
+DEBUG:root:                  lr: 0.001
+DEBUG:root:          checkpoint: 
+DEBUG:root:                cuda: True
+DEBUG:root:          batch_size: 4
+DEBUG:root:              epochs: 4
+DEBUG:root:           optimizer: SGD
+DEBUG:root:                 log: True
+DEBUG:root:           saveModel: True
+DEBUG:root:       save_interval: 2
+DEBUG:root:           modelName: cifar
+DEBUG:root:                 gui: False
+DEBUG:root:              resume: False
+DEBUG:root:Training and testing data loaded successfully.
+DEBUG:root:Arguments
+DEBUG:root:                  lr: 0.001
+DEBUG:root:          checkpoint: 
+DEBUG:root:                cuda: True
+DEBUG:root:          batch_size: 4
+DEBUG:root:              epochs: 4
+DEBUG:root:           optimizer: SGD
+DEBUG:root:                 log: True
+DEBUG:root:           saveModel: True
+DEBUG:root:       save_interval: 2
+DEBUG:root:           modelName: cifar
+DEBUG:root:                 gui: False
+DEBUG:root:              resume: False
+DEBUG:root:Training and testing data loaded successfully.
+DEBUG:root:==============================================
+DEBUG:root:Module info (Not architecture)
+DEBUG:root:conv1               : Conv2d(3, 6, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu1               : ReLU ()
+DEBUG:root:pool1               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:conv2               : Conv2d(6, 16, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu2               : ReLU ()
+DEBUG:root:pool2               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:fc1                 : Linear (400 -> 120)
+DEBUG:root:relu3               : ReLU ()
+DEBUG:root:fc2                 : Linear (120 -> 84)
+DEBUG:root:relu4               : ReLU ()
+DEBUG:root:fc3                 : Linear (84 -> 10)
+DEBUG:root:
+
+DEBUG:root:Parameter Summary:
+DEBUG:root:conv1.weight        : 450        -> torch.Size([6, 3, 5, 5])
+DEBUG:root:conv1.bias          : 6          -> torch.Size([6])
+DEBUG:root:conv2.weight        : 2400       -> torch.Size([16, 6, 5, 5])
+DEBUG:root:conv2.bias          : 16         -> torch.Size([16])
+DEBUG:root:fc1.weight          : 48000      -> torch.Size([120, 400])
+DEBUG:root:fc1.bias            : 120        -> torch.Size([120])
+DEBUG:root:fc2.weight          : 10080      -> torch.Size([84, 120])
+DEBUG:root:fc2.bias            : 84         -> torch.Size([84])
+DEBUG:root:fc3.weight          : 840        -> torch.Size([10, 84])
+DEBUG:root:fc3.bias            : 10         -> torch.Size([10])
+DEBUG:root:Total parameters: 62006
+DEBUG:root:==============================================
+
+DEBUG:root:Epoch 1:
+DEBUG:root:	trn_loss: 1.711, trn_acc: 0.368
+DEBUG:root:	val_loss: 1.430, val_acc: 0.480
+DEBUG:root:Epoch 2:
+DEBUG:root:	trn_loss: 1.357, trn_acc: 0.509
+DEBUG:root:	val_loss: 1.283, val_acc: 0.545
+DEBUG:root:Checkpoint saved.
+DEBUG:root:Arguments
+DEBUG:root:                  lr: 0.001
+DEBUG:root:          checkpoint: 
+DEBUG:root:                cuda: True
+DEBUG:root:          batch_size: 4
+DEBUG:root:              epochs: 4
+DEBUG:root:           optimizer: SGD
+DEBUG:root:                 log: True
+DEBUG:root:           saveModel: True
+DEBUG:root:       save_interval: 2
+DEBUG:root:           modelName: cifar
+DEBUG:root:                 gui: False
+DEBUG:root:              resume: False
+DEBUG:root:Training and testing data loaded successfully.
+DEBUG:root:==============================================
+DEBUG:root:Module info (Not architecture)
+DEBUG:root:conv1               : Conv2d(3, 6, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu1               : ReLU ()
+DEBUG:root:pool1               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:conv2               : Conv2d(6, 16, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu2               : ReLU ()
+DEBUG:root:pool2               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:fc1                 : Linear (400 -> 120)
+DEBUG:root:relu3               : ReLU ()
+DEBUG:root:fc2                 : Linear (120 -> 84)
+DEBUG:root:relu4               : ReLU ()
+DEBUG:root:fc3                 : Linear (84 -> 10)
+DEBUG:root:
+
+DEBUG:root:Parameter Summary:
+DEBUG:root:conv1.weight        : 450        -> torch.Size([6, 3, 5, 5])
+DEBUG:root:conv1.bias          : 6          -> torch.Size([6])
+DEBUG:root:conv2.weight        : 2400       -> torch.Size([16, 6, 5, 5])
+DEBUG:root:conv2.bias          : 16         -> torch.Size([16])
+DEBUG:root:fc1.weight          : 48000      -> torch.Size([120, 400])
+DEBUG:root:fc1.bias            : 120        -> torch.Size([120])
+DEBUG:root:fc2.weight          : 10080      -> torch.Size([84, 120])
+DEBUG:root:fc2.bias            : 84         -> torch.Size([84])
+DEBUG:root:fc3.weight          : 840        -> torch.Size([10, 84])
+DEBUG:root:fc3.bias            : 10         -> torch.Size([10])
+DEBUG:root:Total parameters: 62006
+DEBUG:root:==============================================
+
+DEBUG:root:Epoch 1:
+DEBUG:root:	trn_loss: 1.704, trn_acc: 0.373
+DEBUG:root:	val_loss: 1.481, val_acc: 0.453
+DEBUG:root:Epoch 2:
+DEBUG:root:	trn_loss: 1.320, trn_acc: 0.526
+DEBUG:root:	val_loss: 1.256, val_acc: 0.553
+DEBUG:root:Checkpoint saved.
+DEBUG:root:Arguments
+DEBUG:root:                  lr: 0.001
+DEBUG:root:          checkpoint: 
+DEBUG:root:                cuda: True
+DEBUG:root:          batch_size: 4
+DEBUG:root:              epochs: 4
+DEBUG:root:           optimizer: SGD
+DEBUG:root:                 log: True
+DEBUG:root:           saveModel: True
+DEBUG:root:       save_interval: 2
+DEBUG:root:           modelName: cifar
+DEBUG:root:                 gui: False
+DEBUG:root:              resume: False
+DEBUG:root:Arguments
+DEBUG:root:                  lr: 0.001
+DEBUG:root:          checkpoint: 
+DEBUG:root:                cuda: True
+DEBUG:root:          batch_size: 4
+DEBUG:root:              epochs: 4
+DEBUG:root:           optimizer: SGD
+DEBUG:root:                 log: True
+DEBUG:root:           saveModel: True
+DEBUG:root:       save_interval: 2
+DEBUG:root:           modelName: cifar
+DEBUG:root:                 gui: False
+DEBUG:root:              resume: False
+DEBUG:root:Training and testing data loaded successfully.
+DEBUG:root:==============================================
+DEBUG:root:Module info (Not architecture)
+DEBUG:root:conv1               : Conv2d(3, 6, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu1               : ReLU ()
+DEBUG:root:pool1               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:conv2               : Conv2d(6, 16, kernel_size=(5, 5), stride=(1, 1))
+DEBUG:root:relu2               : ReLU ()
+DEBUG:root:pool2               : MaxPool2d (size=(2, 2), stride=(2, 2), dilation=(1, 1))
+DEBUG:root:fc1                 : Linear (400 -> 120)
+DEBUG:root:relu3               : ReLU ()
+DEBUG:root:fc2                 : Linear (120 -> 84)
+DEBUG:root:relu4               : ReLU ()
+DEBUG:root:fc3                 : Linear (84 -> 10)
+DEBUG:root:
+
+DEBUG:root:Parameter Summary:
+DEBUG:root:conv1.weight        : 450        -> torch.Size([6, 3, 5, 5])
+DEBUG:root:conv1.bias          : 6          -> torch.Size([6])
+DEBUG:root:conv2.weight        : 2400       -> torch.Size([16, 6, 5, 5])
+DEBUG:root:conv2.bias          : 16         -> torch.Size([16])
+DEBUG:root:fc1.weight          : 48000      -> torch.Size([120, 400])
+DEBUG:root:fc1.bias            : 120        -> torch.Size([120])
+DEBUG:root:fc2.weight          : 10080      -> torch.Size([84, 120])
+DEBUG:root:fc2.bias            : 84         -> torch.Size([84])
+DEBUG:root:fc3.weight          : 840        -> torch.Size([10, 84])
+DEBUG:root:fc3.bias            : 10         -> torch.Size([10])
+DEBUG:root:Total parameters: 62006
+DEBUG:root:==============================================
+
+DEBUG:root:Epoch 1:
+DEBUG:root:	trn_loss: 1.731, trn_acc: 0.363
+DEBUG:root:	val_loss: 1.401, val_acc: 0.497
+DEBUG:root:Epoch 2:
+DEBUG:root:	trn_loss: 1.350, trn_acc: 0.515
+DEBUG:root:	val_loss: 1.262, val_acc: 0.542
+DEBUG:root:Checkpoint saved.
+DEBUG:root:Epoch 3:
+DEBUG:root:	trn_loss: 1.206, trn_acc: 0.572
+DEBUG:root:	val_loss: 1.210, val_acc: 0.564
+DEBUG:root:Epoch 4:
+DEBUG:root:	trn_loss: 1.106, trn_acc: 0.609
+DEBUG:root:	val_loss: 1.125, val_acc: 0.603
+DEBUG:root:Checkpoint saved.
+DEBUG:root:Finished training
+DEBUG:root:Checkpoint saved.
