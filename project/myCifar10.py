@@ -28,6 +28,8 @@ import os
 import logging, argparse
 import time
 
+from utility import logMsg
+from vgg import *
 
 # function to show an image
 def imshow(img, use_gui=False):
@@ -38,13 +40,7 @@ def imshow(img, use_gui=False):
         plt.imshow(np.transpose(npimg, (1,2,0))) # previously tensor stores (channel, width, height)
         plt.show()
 
-def logMsg(msg, use_log=False, printToConsole=True):
-    
-    if use_log:
-        logging.debug(msg)
-            
-    if printToConsole:
-        print(msg)
+
         
 # inherit nn.module
 class Net(nn.Module):
@@ -223,7 +219,7 @@ def saveCheckpoint(filename, epoch, net, optim, history, use_cuda):
 def plotStatistics(history, use_gui=False, fprefix='', fname=''):
 
     ''' plots '''
-    #plt.figure()
+    plt.figure()
     plt.plot(range(len(history['train_loss'])), history['train_loss'], color='r', label='train_loss')
     plt.title('Training Loss')
     plt.xlabel('epoch')
@@ -235,7 +231,7 @@ def plotStatistics(history, use_gui=False, fprefix='', fname=''):
     else:
         plt.savefig('{0}_{1}_train_loss.png'.format(fprefix, fname))
     
-    #plt.figure()
+    plt.figure()
     plt.plot(history['train_acc'], color='b', label='train_acc')
     plt.plot(history['val_acc'], color='r', label='val_acc')
     plt.title('Training/Validation Accuracy')
@@ -262,7 +258,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-log', default=True, action='store_false', dest='log', help='no logging')
     parser.add_argument('--doNotSaveModel', default=True, action='store_false', dest='saveModel', help='do not save model')
     parser.add_argument('--save-interval', '-si', default=2, type=int, dest='save_interval', help='save the model at some epoch interval')
-    parser.add_argument('--model-name', '-f', default=datetime.now().strftime('%Y_%m_%d_%H_%M'), type=str, dest='modelName', help='name of model to save')
+    parser.add_argument('--model-name', '-m', default=datetime.now().strftime('%Y_%m_%d_%H_%M'), type=str, dest='modelName', help='name of model to save')
     parser.add_argument('--gui', default=False, action='store_true', dest='gui', help='use gui to display graphs')
     parser.add_argument('--resume', '-r', default=False, action='store_true', dest='resume', help='resume training')
     
@@ -334,7 +330,8 @@ if __name__ == '__main__':
             sys.exit(0)
         
     else:
-        net = Net()
+        #net = Net()
+        net = VGG('VGG16')
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9) #define how to update gradient
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
     
