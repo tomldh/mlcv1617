@@ -358,7 +358,7 @@ if __name__ == '__main__':
         net.load_state_dict(chkpt['state_dict'])
         if chkpt['arch_cuda']:
             net.cpu()
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9) #define how to update gradient
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4) #define how to update gradient
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
         
@@ -374,7 +374,7 @@ if __name__ == '__main__':
     else:
         #net = Net()
         net = CellVGG('VGG13_m')
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9) #define how to update gradient
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4) #define how to update gradient
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
     
     ''' network info '''
