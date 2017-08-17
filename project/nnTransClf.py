@@ -24,6 +24,14 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import sys
+from datetime import datetime
+
+import os
+import logging, argparse
+import time
+
+from utility import *
+from models import *
 
 class CellDataset(Dataset):
     
@@ -78,16 +86,33 @@ class ToTensor(object):
         images = images.transpose((0, 3, 1, 2))
         
         return {'images': torch.from_numpy(images), 'labels': int(labels), 'index':indices}
-        
-        
 
-def showImages(images, labels, index):
+class SubtractMean(object):
+    
+    def __call__(self, sample):
+        
+        images = sample['images'].astype(np.float32)
+        labels = sample['labels']
+        indices = sample['index']
+        
+        # only subtract mean in image data
+        for c in [0, 1]:
+            images[c] -=np.mean(images[c])
+            
+        return {'images': images, 'labels': labels, 'index':indices}
+
+def showImages(sample, use_gui):
+    
+    images, labels, index = sample['images'], sample['labels'], sample['index']
     
     images = images.numpy()
     
     images = images.transpose((0, 2, 3, 1))
     
-    print('mininum: ', np.max(images[0][:, :, 0]))
+    print('image dimension: {0}, {1}'.format(images.shape[1], images.shape[2]) )
+    print('mininum: ', np.min(images[0, :, :, 0]))
+    print('maximum: ', np.max(images[0, :, :, 0]))
+    
     
     assert images.ndim == 4
     
@@ -112,9 +137,13 @@ def showImages(images, labels, index):
                 ax.imshow(images[j][:, :, i], cmap='gray')
                 
                 pltIndex += 1
+    if use_gui:
+        plt.show()
+    else:
+        plt.savefig('sample_{}.png'.format(index))
 
 
-def showBatchImages(sampleBatch):
+def showBatchImages(sampleBatch, use_gui):
     
     images, labels = sampleBatch['images'], sampleBatch['labels']
     
@@ -146,96 +175,255 @@ def showBatchImages(sampleBatch):
                 ax.set_title('Label {0}'.format(labels[i]))
                 ax.imshow(images[i, k, :, :, j], cmap='gray')
                 pltIndex += 1
+    if use_gui:
+        plt.show()
 
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv3d(4, 6, (1,5,5)) # output channel "6" is the number of filters
-        self.pool = nn.MaxPool3d((1,2,2), 2)
-        self.conv2 = nn.Conv3d(6, 16, (1,5,5))
-        self.fc1 = nn.Linear(16*63*63, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 2)
+''' show an item/sample (with specified index) from a dataset'''
+''' assume data already converted to pytorch tensor '''
+def displaySample(set, index=0, use_gui=False):
+    sample = set.__getitem__(index)
+    showImages(sample, use_gui)
     
-    # for score calculation
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16*63*63) #-1 is deduced from the other dimension(16*5*5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-    
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
-    
-    def totalSize(self, t):
-        num = 1
-        for s in t.size():
-            num *= s
-        return num
-            
-    
-    def printNetInfo(self):
-
-        print('==============================================')
-        print('Layer info (Not architecture)')
-        for name, m in self.named_children():
-            print('{0: <20}: {1}'.format(name, m))
-        #print('==============================================')
-        print('\n')
-        #print('==============================================')
-        print('Parameter Summary:')
-        sumParam = 0
-        for name, param in self.named_parameters():
-            sumParam += self.totalSize(param)
-            print('{0: <20}: {1: <10} -> {2}'.format(name, self.totalSize(param), param.size()))
-        
-        print('Total parameters: {}'.format(sumParam))
-        print('==============================================\n')
     
 
-def displaySample(index=0):
-    sample = trainset.__getitem__(index)
-    showImages(**sample)
-    plt.show()
-    
-
-
-def displayBatch(loader, index=0, single=True):
+''' show a single (with specified index) '''
+''' or continuous batch(es) from a dataloader'''
+''' assumed data already converted to tensor '''
+def displayBatch(loader, index=0, single=True, use_gui=False):
     
     for i_batch, sample_batch in enumerate(loader):
         
         if single:
             if i_batch == index:
                 print(i_batch, print(' '.join('index: %5s' % sample_batch['index'][j] for j in range(sample_batch['index'].size()[0]))))
-                showBatchImages(sample_batch)
-                plt.show()
+                showBatchImages(sample_batch, use_gui)
                 break
         else:
             if i_batch >= index:
                 print(i_batch, print(' '.join('index: %5s' % sample_batch['index'][j] for j in range(sample_batch['index'].size()[0]))))
-                showBatchImages(sample_batch)
-                plt.show()
+                showBatchImages(sample_batch, use_gui)
+
+
+
+def train(epoch, net, optim, lossFcn, loader, history, use_cuda):
+    
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    
+    for i, data in enumerate(loader):
+        inputs, labels = data['images'], data['labels']
+         
+        if use_cuda:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
             
+        inputs, labels = Variable(inputs), Variable(labels)
+        
+        optim.zero_grad()
+        
+        outputs = net(inputs)
+        loss = lossFcn(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        
+        running_loss += loss.data[0] #loss is a Variable
+        
+        
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.data.size(0)
+        correct += (predicted == labels.data).sum()
+    
+    running_loss /= (i+1)
+    running_acc = correct / total
+    
+    history['train_loss'].append(running_loss)
+    history['train_acc'].append(running_acc)
+    
+    logMsg('\ttrn_loss: {0:.3f}, trn_acc: {1:.3f}'.format(running_loss, running_acc), args.log)
+
+
+def validate(epoch, net, lossFcn, loader, history, use_cuda):
+    
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    
+    for i, data in enumerate(loader):
+        inputs, labels = data['images'], data['labels']
+        
+        if use_cuda:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
+        
+        inputs, labels = Variable(inputs), Variable(labels)
+        
+        outputs = net(inputs)
+        
+        loss = lossFcn(outputs, labels)
+        
+        running_loss += loss.data[0] #loss is a Variable
+        
+        _, predicted = torch.max(outputs.data, 1)
+        
+        total += labels.data.size(0)
+        correct += (predicted == labels.data).sum()
+        
+    running_loss /= (i+1)
+    running_acc = correct / total
+    
+    history['val_loss'].append(running_loss)
+    history['val_acc'].append(running_acc)
+        
+    logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}'.format(running_loss, running_acc), args.log)
+
 
 if __name__ == '__main__':
     
-    trainset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=True, split = 0.75, transform=transforms.Compose([ToTensor()])) #
+    ''' command line inputs '''
+    parser = argparse.ArgumentParser(description='Pytorch Transition Classifier Training')
     
-    trainloader = DataLoader(trainset, batch_size=4, shuffle=True, num_workers=2)
+    parser.add_argument('--learning-rate', '-lr', default=0.001, type=float, dest='lr', help='learning rate')
+    parser.add_argument('--checkpoint', '-cp', default='', type=str, dest='checkpoint', help='resume from given checkpoint')
+    parser.add_argument('--no-cuda', default=True, action='store_false', dest='cuda', help='do not use cuda')
+    parser.add_argument('--train-batch-size', '-tb', default=4, type=int, dest='train_batch_size', help='training batch size')
+    parser.add_argument('--validate-batch-size', '-vb', default=4, type=int, dest='val_batch_size', help='testing batch size')
+    parser.add_argument('--epochs', default=6, type=int, dest='epochs', help='number of training epochs')
+    parser.add_argument('--optimizer', '-o', default='SGD', type=str, dest='optimizer', help='optimzer')
+    parser.add_argument('--no-log', default=True, action='store_false', dest='log', help='no logging')
+    parser.add_argument('--doNotSaveModel', default=True, action='store_false', dest='saveModel', help='do not save model')
+    parser.add_argument('--save-interval', '-si', default=2, type=int, dest='save_interval', help='save the model at some epoch interval')
+    parser.add_argument('--model-name', '-m', default=datetime.now().strftime('%Y_%m_%d_%H_%M'), type=str, dest='modelName', help='name of model to save')
+    parser.add_argument('--gui', default=False, action='store_true', dest='gui', help='use gui to display graphs')
+    parser.add_argument('--resume', '-r', default=False, action='store_true', dest='resume', help='resume training')
     
-    testset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=False, split = 0.75, transform=transforms.Compose([ToTensor()])) #
+    ''' initialize variables '''
+    args = parser.parse_args()
+    epochs = args.epochs
+    
+    start_epoch = 0
+    
+    if args.log:
+        logging.basicConfig(filename=args.modelName+'.log',level=logging.DEBUG)
+    
+    logMsg('Arguments', args.log)
+    for arg in vars(args):
+        logMsg('{0:20s}: {1}'.format(arg.rjust(20), getattr(args, arg)), args.log)
+    
+    if args.cuda:
+        if torch.cuda.is_available():
+            use_cuda = True
+        else:
+            use_cuda = False
+            logMsg('No cuda device is available. Use CPU.', args.log)
+    else:
+        use_cuda = False
+    
+    ''' prepare data '''
+    
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ]) 
+    # load data and perform transformation
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
+    
+    trainset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=True, split = 0.75, transform=transforms.Compose([SubtractMean(),ToTensor()])) #
+    
+    trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
+    
+    testset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=False, split = 0.75, transform=transforms.Compose([SubtractMean(),ToTensor()])) #
 
-    testloader = DataLoader(testset, batch_size=4, shuffle=False, num_workers=2)
+    testloader = DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
-    displayBatch(testloader, single=False)
+    displaySample(set=trainset, index=0, use_gui=False)
+    
+    ''' load already trained model '''
+    if args.checkpoint:
+        
+        #assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        
+        chkpt = torch.load(args.checkpoint+'.md.tar')
+        
+        ''' do something about checkpoint...'''
+        start_epoch = chkpt['epoch']
+        net = chkpt['arch']
+        net.load_state_dict(chkpt['state_dict'])
+        if chkpt['arch_cuda']:
+            net.cpu()
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9) #define how to update gradient
+        optimizer.load_state_dict(chkpt['optimizer'])
+        netHist = chkpt['history']
+        
+        ''' post analysis '''
+        visualizeWeights(net.conv1.weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
+        plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
+        
+        if not args.resume:
+            sys.exit(0)
+        
+        logMsg('Resume from epoch={0}'.format(start_epoch), args.log)
+      
+    else:
+        #net = Net()
+        net = CellVGG('VGG13_m')
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9) #define how to update gradient
+        netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
+    
+    ''' network info '''
+    net.printInfo(args.log)
+    
+    if use_cuda:
+        net.cuda()
+
+    lossFcn = nn.CrossEntropyLoss() #loss function
+    
+    logMsg('Start training', args.log)
+    begintime = time.time()
+    
+    ''' train for number of epochs '''
+    for epoch in range(start_epoch, start_epoch+epochs):
+        
+        epoch_begin = time.time()
+        
+        logMsg('Epoch {0}:'.format(epoch+1), args.log)
+        
+        train(epoch, net, optimizer, lossFcn, trainloader, netHist, use_cuda)
+        
+        validate(epoch, net, lossFcn, testloader, netHist, use_cuda)
+        
+        logMsg('used {0:.3f} sec.'.format(time.time()-epoch_begin), args.log)
+        
+        # save model at some interval
+        if (epoch+1) % args.save_interval == 0 and args.saveModel:
+            saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
+            logMsg('Checkpoint saved. Subtotal time used: {0:.3f} min'.format((time.time()-begintime)/60), args.log)
+            # output plot to check 
+            plotStatistics(netHist, False, args.modelName, 'epoch{0}'.format(epoch+1))
+        
+        
+    logMsg('Finished training. Total time used: {0:.3f} min'.format((time.time()-begintime)/60), args.log)
+    
+    ''' always save the model again at the end '''
+    if args.saveModel:
+        saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
+        logMsg('Checkpoint saved.', args.log)
+    
+    #convert back to cpu 
+    if use_cuda:
+        net.cpu()
+        
+    #visualizeWeights(net.conv1.weight.data, args.gui, args.modelName, 'conv1_weight')
+    plotStatistics(netHist, args.gui, args.modelName, 'epoch{0}'.format(epoch+1))
+    
+    #displayBatch(testloader, single=False)
     
     '''
     print(trainset.__len__())
@@ -252,39 +440,7 @@ if __name__ == '__main__':
             plt.show()
            
     '''
-    
     '''
-    
-    # define cnn
-    net = Net()
-    
-    lossFcn = nn.CrossEntropyLoss() #loss function
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9) #define how to update gradient
-    
-    # start training
-    for epoch in range(1):
-        running_loss = 0.0
-        
-        for i, data in enumerate(trainloader):
-            inputs, labels = data['images'], data['labels']
-            #print(inputs.size(), ' ', labels.size())
-            
-            inputs, labels = Variable(inputs), Variable(labels)
-            
-            optimizer.zero_grad()
-            
-            outputs = net(inputs)
-            loss = lossFcn(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            running_loss += loss.data[0] #loss is a Variable
-            if i % 20 == 19:
-                print('[%d, %5d] loss: %.3f' % (epoch+1, i+1, running_loss / 20))
-                running_loss = 0.0
-    
-    print('Finished training')
-    
     # testing
     dataiter = iter(testloader)
     sample = dataiter.next()
@@ -303,6 +459,6 @@ if __name__ == '__main__':
     
     showBatchImages(sample)
     plt.show()
-    
     '''
+
    
