@@ -16,10 +16,16 @@ class CellVGG(nn.Module):
     def __init__(self, vgg_name):
         super(CellVGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name])
+        '''
         self.fc1 = nn.Linear(4096, 4096)
         self.fc2 = nn.Linear(4096, 1000)
         self.fc3 = nn.Linear(1000, 2)
-
+        '''
+        
+        self.fc1 = nn.Linear(32768, 4096)
+        self.fc2 = nn.Linear(4096, 1000)
+        self.fc3 = nn.Linear(1000, 2)
+        
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
