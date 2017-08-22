@@ -15,7 +15,7 @@ from torchvision import transforms
 
 import h5py
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from torch.autograd import Variable
 import torch.nn as nn
@@ -296,6 +296,9 @@ if __name__ == '__main__':
     parser.add_argument('--model-name', '-m', default=datetime.now().strftime('%Y_%m_%d_%H_%M'), type=str, dest='modelName', help='name of model to save')
     parser.add_argument('--gui', default=False, action='store_true', dest='gui', help='use gui to display graphs')
     parser.add_argument('--resume', '-r', default=False, action='store_true', dest='resume', help='resume training')
+    parser.add_argument('--data', '-d', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='dataFile', help='name of data file')
+    parser.add_argument('--weight-decay', '-wd', default=0, type=float, dest='wd', help='weight decay')
+    parser.add_argument('--arch', '-a', default='VGG13_m', type=str, dest='arch', help='network architecture')
     
     ''' initialize variables '''
     args = parser.parse_args()
@@ -335,11 +338,11 @@ if __name__ == '__main__':
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=True, split = 0.75, transform=transforms.Compose([SubtractMean(),ToTensor()])) #
+    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.75, transform=transforms.Compose([ToTensor()])) #
     
     trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
-    testset = CellDataset('Fluo-N2DH-SIM-01-samples-2017-08-04.h5', '.', train=False, split = 0.75, transform=transforms.Compose([SubtractMean(),ToTensor()])) #
+    testset = CellDataset(args.dataFile, '.', train=False, split = 0.75, transform=transforms.Compose([ToTensor()])) #
 
     testloader = DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
@@ -358,7 +361,7 @@ if __name__ == '__main__':
         net.load_state_dict(chkpt['state_dict'])
         if chkpt['arch_cuda']:
             net.cpu()
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4) #define how to update gradient
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
         
@@ -373,8 +376,8 @@ if __name__ == '__main__':
       
     else:
         #net = Net()
-        net = CellVGG('VGG13_m')
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4) #define how to update gradient
+        net = CellVGG(args.arch)
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
     
     ''' network info '''
