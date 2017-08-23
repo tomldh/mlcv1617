@@ -236,7 +236,7 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda):
     
     running_loss /= (i+1)
     running_acc = correct / total
-    
+
     history['train_loss'].append(running_loss)
     history['train_acc'].append(running_acc)
     
@@ -268,7 +268,7 @@ def validate(epoch, net, lossFcn, loader, history, use_cuda):
         
         total += labels.data.size(0)
         correct += (predicted == labels.data).sum()
-        
+
     running_loss /= (i+1)
     running_acc = correct / total
     
@@ -366,8 +366,8 @@ if __name__ == '__main__':
         netHist = chkpt['history']
         
         ''' post analysis '''
-        visualizeWeights(net.conv1.weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
-        plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
+        visualizeWeights(net.features[0].weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
+        #plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
         
         if not args.resume:
             sys.exit(0)
@@ -377,6 +377,7 @@ if __name__ == '__main__':
     else:
         #net = Net()
         net = CellVGG(args.arch)
+        net.apply(weights_init)
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
     

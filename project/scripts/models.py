@@ -8,24 +8,41 @@ cfg = {
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-    'VGG13_m': [2, 2, 'M', 8, 8, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M']
+    'VGG13_m': [2, 2, 'M', 8, 8, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
+    'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M']
 }
 
+
+# custom weights initialization called on netG and netD
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        #m.weight.data.random_()
+        m.weight.data.normal_(0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+        
 
 class CellVGG(nn.Module):
     def __init__(self, vgg_name):
         super(CellVGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name])
-        '''
+        
         self.fc1 = nn.Linear(4096, 4096)
         self.fc2 = nn.Linear(4096, 1000)
         self.fc3 = nn.Linear(1000, 2)
-        '''
         
+        '''
         self.fc1 = nn.Linear(32768, 4096)
         self.fc2 = nn.Linear(4096, 1000)
         self.fc3 = nn.Linear(1000, 2)
-        
+        '''
+        '''
+        self.fc1 = nn.Linear(8192, 2048)
+        self.fc2 = nn.Linear(2048, 512)
+        self.fc3 = nn.Linear(512, 2)
+        '''
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
@@ -36,7 +53,7 @@ class CellVGG(nn.Module):
 
     def _make_layers(self, cfg):
         layers = []
-        in_channels = 4
+        in_channels = 2
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool3d(kernel_size=(1,2,2), stride=2)]
