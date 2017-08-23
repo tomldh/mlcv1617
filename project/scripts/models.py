@@ -26,49 +26,56 @@ def weights_init(m):
         
 
 class CellVGG(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self, vgg_name, ch):
         super(CellVGG, self).__init__()
-        self.features = self._make_layers(cfg[vgg_name])
+        self.features = self._make_layers(cfg[vgg_name], ch)
         
-        self.fc1 = nn.Linear(4096, 4096)
-        self.fc2 = nn.Linear(4096, 1000)
-        self.fc3 = nn.Linear(1000, 2)
+        if vgg_name == 'VGG13_m':
+            self.fc1 = nn.Linear(4096, 1024)
+            self.bn1 = nn.BatchNorm1d(1024)
+            self.fc2 = nn.Linear(1024, 256)
+            self.bn2 = nn.BatchNorm1d(256)
+            self.fc3 = nn.Linear(256, 2)
         
+        elif vgg_name == 'VGG13':
+            self.fc1 = nn.Linear(32768, 4096)
+            self.bn1 = nn.BatchNorm1d(4096)
+            self.fc2 = nn.Linear(4096, 512)
+            self.bn2 = nn.BatchNorm1d(512)
+            self.fc3 = nn.Linear(1000, 2)
         
-        #self.fc1 = nn.Linear(32768, 4096)
-        #self.fc2 = nn.Linear(4096, 1000)
-        #self.fc3 = nn.Linear(1000, 2)
+        elif vgg_name == 'C1':
+            self.fc1 = nn.Linear(8192, 2048)
+            self.bn1 = nn.BatchNorm1d(2048)
+            self.fc2 = nn.Linear(2048, 512)
+            self.bn2 = nn.BatchNorm1d(512)
+            self.fc3 = nn.Linear(512, 2)
         
-        '''
-        self.fc1 = nn.Linear(8192, 2048)
-        self.fc2 = nn.Linear(2048, 512)
-        self.fc3 = nn.Linear(512, 2)
-        '''
-	
-        
-        #self.fc1 = nn.Linear(16384, 2048)
-        #self.fc2 = nn.Linear(2048, 512)
-        #self.fc3 = nn.Linear(512, 2)
-	
+        elif vgg_name == 'C2':
+            self.fc1 = nn.Linear(16384, 2048)
+            self.bn1 = nn.BatchNorm1d(2048)
+            self.fc2 = nn.Linear(2048, 256)
+            self.bn2 = nn.BatchNorm1d(256)
+            self.fc3 = nn.Linear(256, 2)
 
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
-        out = F.relu(self.fc1(out))
-        out = F.relu(self.fc2(out))
+        out = F.relu(self.bn1(self.fc1(out)))
+        out = F.relu(self.bn2(self.fc2(out)))
         out = self.fc3(out)
         return out
 
-    def _make_layers(self, cfg):
+    def _make_layers(self, cfg, ch):
         layers = []
-        in_channels = 4
+        in_channels = ch
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool3d(kernel_size=(1,2,2), stride=2)]
             else:
                 layers += [nn.Conv3d(in_channels, x, kernel_size=(1,3,3), padding=(0,1,1)),
                            nn.BatchNorm3d(x),
-			   nn.ReLU(inplace=True)]
+                           nn.ReLU(inplace=True)]
                 in_channels = x
         return nn.Sequential(*layers)
     

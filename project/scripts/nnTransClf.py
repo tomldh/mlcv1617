@@ -208,7 +208,7 @@ def displayBatch(loader, index=0, single=True, use_gui=False):
 
 
 
-def train(epoch, net, optim, lossFcn, loader, history, use_cuda):
+def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=False):
     
     running_loss = 0.0
     correct = 0
@@ -243,10 +243,10 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda):
     history['train_loss'].append(running_loss)
     history['train_acc'].append(running_acc)
     
-    logMsg('\ttrn_loss: {0:.3f}, trn_acc: {1:.3f}'.format(running_loss, running_acc), args.log)
+    logMsg('\ttrn_loss: {0:.3f}, trn_acc: {1:.3f}'.format(running_loss, running_acc), use_log)
 
 
-def validate(epoch, net, lossFcn, loader, history, use_cuda):
+def validate(epoch, net, lossFcn, loader, history, use_cuda=False, use_log=False):
     
     running_loss = 0.0
     correct = 0
@@ -278,9 +278,9 @@ def validate(epoch, net, lossFcn, loader, history, use_cuda):
     history['val_loss'].append(running_loss)
     history['val_acc'].append(running_acc)
         
-    logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}'.format(running_loss, running_acc), args.log)
+    logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}'.format(running_loss, running_acc), use_log)
 
-def test(net, lossFcn, loader):
+def test(net, lossFcn, loader, use_cuda=False, use_log=False):
     
     running_loss = 0.0
     correct = 0
@@ -288,6 +288,10 @@ def test(net, lossFcn, loader):
     
     for i, data in enumerate(loader):
         inputs, labels = data['images'], data['labels']
+        
+        if use_cuda:
+            inputs = inputs.cuda()
+            labels = labels.cuda()
         
         inputs, labels = Variable(inputs), Variable(labels)
         
@@ -305,7 +309,7 @@ def test(net, lossFcn, loader):
     running_loss /= (i+1)
     running_acc = correct / total
         
-    logMsg('Test samples: {0}, Test acc: {1:.3f}'.format(i+1, running_acc), args.log)
+    logMsg('Number of samples: {0}, Test accuracy: {1:.3f}'.format(i+1, running_acc), use_log)
 
 if __name__ == '__main__':
     
@@ -328,8 +332,9 @@ if __name__ == '__main__':
     parser.add_argument('--data', '-d', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='dataFile', help='name of data file')
     parser.add_argument('--weight-decay', '-wd', default=0, type=float, dest='wd', help='weight decay')
     parser.add_argument('--arch', '-a', default='VGG13_m', type=str, dest='arch', help='network architecture')
-    parser.add_argument('--test', default=False, action='store_true', dest='test', help='testing')
+    parser.add_argument('--no-test', default=True, action='store_false', dest='test', help='do not perform testing')
     parser.add_argument('--test-data', '-t', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='testFile', help='name of test file')
+    parser.add_argument('--channels', '-c', default = 2, type=int, dest='channels', help='number of channels of an sample')
     
     ''' initialize variables '''
     args = parser.parse_args()
@@ -369,17 +374,17 @@ if __name__ == '__main__':
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.02, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.75, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
     
     trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
-    valset = CellDataset(args.dataFile, '.', train=False, split = 0.98, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    valset = CellDataset(args.dataFile, '.', train=False, split = 0.75, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
 
     valloader = DataLoader(valset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
     testset = CellDataset(args.testFile, '.', train=False, split = 0, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
 
-    testloader = DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
+    testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
     
     displaySample(set=trainset, index=0, use_gui=False)
     
@@ -396,6 +401,11 @@ if __name__ == '__main__':
         start_epoch = chkpt['epoch']
         net = chkpt['arch']
         net.load_state_dict(chkpt['state_dict'])
+        
+        if args.test:
+            logMsg('Perform testing on: {0}'.format(args.testFile), args.log)
+            test(net, lossFcn, testloader, chkpt['arch_cuda'], args.log)
+            
         if chkpt['arch_cuda']:
             net.cpu()
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
@@ -406,20 +416,14 @@ if __name__ == '__main__':
         visualizeWeights(net.features[0].weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
         #plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
         
-        if args.test:
-            logMsg('Perform testing on: {0}'.format(args.testFile), args.log)
-            test(net, lossFcn, testloader)
-        
         if args.resume:
             logMsg('Resume from epoch={0}'.format(start_epoch), args.log)
         else:
             sys.exit(0)
         
-        
-        
     else:
         #net = Net()
-        net = CellVGG(args.arch)
+        net = CellVGG(args.arch, args.channels)
         net.apply(weights_init)
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
@@ -442,9 +446,9 @@ if __name__ == '__main__':
         
         logMsg('Epoch {0}:'.format(epoch+1), args.log)
         
-        train(epoch, net, optimizer, lossFcn, trainloader, netHist, use_cuda)
+        train(epoch, net, optimizer, lossFcn, trainloader, netHist, use_cuda, args.log)
         
-        validate(epoch, net, lossFcn, valloader, netHist, use_cuda)
+        validate(epoch, net, lossFcn, valloader, netHist, use_cuda, args.log)
         
         logMsg('used {0:.3f} sec.'.format(time.time()-epoch_begin), args.log)
         
@@ -462,6 +466,10 @@ if __name__ == '__main__':
     if args.saveModel:
         saveCheckpoint(args.modelName, epoch+1, net, optimizer, netHist, args.cuda)
         logMsg('Checkpoint saved.', args.log)
+    
+    if args.test:
+        logMsg('Perform testing on: {0}'.format(args.testFile), args.log)
+        test(net, lossFcn, testloader, use_cuda, args.log)
     
     #convert back to cpu 
     if use_cuda:
