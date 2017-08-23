@@ -9,7 +9,8 @@ cfg = {
     'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'VGG13_m': [2, 2, 'M', 8, 8, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
-    'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M']
+    'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
+    'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M']
 }
 
 
@@ -17,8 +18,8 @@ cfg = {
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        #m.weight.data.random_()
-        m.weight.data.normal_(0.0, 0.02)
+        m.weight.data.random_()
+        #m.weight.data.normal_(0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
@@ -33,16 +34,23 @@ class CellVGG(nn.Module):
         self.fc2 = nn.Linear(4096, 1000)
         self.fc3 = nn.Linear(1000, 2)
         
-        '''
-        self.fc1 = nn.Linear(32768, 4096)
-        self.fc2 = nn.Linear(4096, 1000)
-        self.fc3 = nn.Linear(1000, 2)
-        '''
+        
+        #self.fc1 = nn.Linear(32768, 4096)
+        #self.fc2 = nn.Linear(4096, 1000)
+        #self.fc3 = nn.Linear(1000, 2)
+        
         '''
         self.fc1 = nn.Linear(8192, 2048)
         self.fc2 = nn.Linear(2048, 512)
         self.fc3 = nn.Linear(512, 2)
         '''
+	
+        
+        #self.fc1 = nn.Linear(16384, 2048)
+        #self.fc2 = nn.Linear(2048, 512)
+        #self.fc3 = nn.Linear(512, 2)
+	
+
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
@@ -53,13 +61,14 @@ class CellVGG(nn.Module):
 
     def _make_layers(self, cfg):
         layers = []
-        in_channels = 2
+        in_channels = 4
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool3d(kernel_size=(1,2,2), stride=2)]
             else:
                 layers += [nn.Conv3d(in_channels, x, kernel_size=(1,3,3), padding=(0,1,1)),
-                           nn.ReLU(inplace=True)]
+                           nn.BatchNorm3d(x),
+			   nn.ReLU(inplace=True)]
                 in_channels = x
         return nn.Sequential(*layers)
     

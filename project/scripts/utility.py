@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 import matplotlib as mpl
-#mpl.use('Agg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 def logMsg(msg, use_log=False, printToConsole=True):
@@ -58,7 +58,7 @@ def visualizeWeights(weight, use_gui=False, fprefix='', fname=''):
             for j in range(wnp.shape[1]):
                 ax = plt.subplot(wnp.shape[0], wnp.shape[1], idx)
                 ax.axis('off')
-                ax.imshow(wnp[i, j, :], cmap='gray', vmin=vmin, vmax=vmax, interpolation=None)
+                ax.imshow(wnp[i, j, :], cmap='gray', vmin=vmin, vmax=vmax, interpolation='bilinear')
                 idx += 1
     
     elif wnp.ndim == 5:
@@ -69,7 +69,7 @@ def visualizeWeights(weight, use_gui=False, fprefix='', fname=''):
                 for k in range(wnp.shape[2]):
                     ax = plt.subplot(wnp.shape[0]*wnp.shape[2], wnp.shape[1], idx)
                     ax.axis('off')
-                    ax.imshow(wnp[i, j, k, :], cmap='gray', vmin=vmin, vmax=vmax, interpolation=None)
+                    ax.imshow(wnp[i, j, k, :], cmap='gray', vmin=vmin, vmax=vmax, interpolation='bilinear')
                     idx += 1
           
         
