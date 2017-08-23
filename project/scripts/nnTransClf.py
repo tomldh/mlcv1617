@@ -89,6 +89,9 @@ class ToTensor(object):
 
 class SubtractMean(object):
     
+    def __init__(self, mean):
+        self.mean = mean
+    
     def __call__(self, sample):
         
         images = sample['images'].astype(np.float32)
@@ -97,7 +100,7 @@ class SubtractMean(object):
         
         # only subtract mean in image data
         for c in [0, 1]:
-            images[c] -=np.mean(images[c])
+            images[c] -= self.mean
             
         return {'images': images, 'labels': labels, 'index':indices}
 
@@ -277,6 +280,32 @@ def validate(epoch, net, lossFcn, loader, history, use_cuda):
         
     logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}'.format(running_loss, running_acc), args.log)
 
+def test(net, lossFcn, loader):
+    
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    
+    for i, data in enumerate(loader):
+        inputs, labels = data['images'], data['labels']
+        
+        inputs, labels = Variable(inputs), Variable(labels)
+        
+        outputs = net(inputs)
+        
+        loss = lossFcn(outputs, labels)
+        
+        running_loss += loss.data[0] #loss is a Variable
+        
+        _, predicted = torch.max(outputs.data, 1)
+        
+        total += labels.data.size(0)
+        correct += (predicted == labels.data).sum()
+
+    running_loss /= (i+1)
+    running_acc = correct / total
+        
+    logMsg('Test samples: {0}, Test acc: {1:.3f}'.format(i+1, running_acc), args.log)
 
 if __name__ == '__main__':
     
@@ -299,6 +328,8 @@ if __name__ == '__main__':
     parser.add_argument('--data', '-d', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='dataFile', help='name of data file')
     parser.add_argument('--weight-decay', '-wd', default=0, type=float, dest='wd', help='weight decay')
     parser.add_argument('--arch', '-a', default='VGG13_m', type=str, dest='arch', help='network architecture')
+    parser.add_argument('--test', default=False, action='store_true', dest='test', help='testing')
+    parser.add_argument('--test-data', '-t', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='testFile', help='name of test file')
     
     ''' initialize variables '''
     args = parser.parse_args()
@@ -338,15 +369,21 @@ if __name__ == '__main__':
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.75, transform=transforms.Compose([ToTensor()])) #
+    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.02, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
     
     trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
-    testset = CellDataset(args.dataFile, '.', train=False, split = 0.75, transform=transforms.Compose([ToTensor()])) #
+    valset = CellDataset(args.dataFile, '.', train=False, split = 0.98, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+
+    valloader = DataLoader(valset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
+    
+    testset = CellDataset(args.testFile, '.', train=False, split = 0, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
 
     testloader = DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
     displaySample(set=trainset, index=0, use_gui=False)
+    
+    lossFcn = nn.CrossEntropyLoss() #loss function
     
     ''' load already trained model '''
     if args.checkpoint:
@@ -369,11 +406,17 @@ if __name__ == '__main__':
         visualizeWeights(net.features[0].weight.data, args.gui, args.checkpoint, 'checkpoint_conv1')
         #plotStatistics(netHist, args.gui, args.checkpoint, 'checkpoint')
         
-        if not args.resume:
+        if args.test:
+            logMsg('Perform testing on: {0}'.format(args.testFile), args.log)
+            test(net, lossFcn, testloader)
+        
+        if args.resume:
+            logMsg('Resume from epoch={0}'.format(start_epoch), args.log)
+        else:
             sys.exit(0)
         
-        logMsg('Resume from epoch={0}'.format(start_epoch), args.log)
-      
+        
+        
     else:
         #net = Net()
         net = CellVGG(args.arch)
@@ -387,7 +430,7 @@ if __name__ == '__main__':
     if use_cuda:
         net.cuda()
 
-    lossFcn = nn.CrossEntropyLoss() #loss function
+
     
     logMsg('Start training', args.log)
     begintime = time.time()
@@ -401,7 +444,7 @@ if __name__ == '__main__':
         
         train(epoch, net, optimizer, lossFcn, trainloader, netHist, use_cuda)
         
-        validate(epoch, net, lossFcn, testloader, netHist, use_cuda)
+        validate(epoch, net, lossFcn, valloader, netHist, use_cuda)
         
         logMsg('used {0:.3f} sec.'.format(time.time()-epoch_begin), args.log)
         
