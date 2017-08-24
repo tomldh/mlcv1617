@@ -29,7 +29,7 @@ class CellVGG(nn.Module):
     def __init__(self, vgg_name, ch):
         super(CellVGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name], ch)
-        
+
         if vgg_name == 'VGG13_m':
             self.fc1 = nn.Linear(4096, 1024)
             self.bn1 = nn.BatchNorm1d(1024)
@@ -57,12 +57,16 @@ class CellVGG(nn.Module):
             self.fc2 = nn.Linear(2048, 256)
             self.bn2 = nn.BatchNorm1d(256)
             self.fc3 = nn.Linear(256, 2)
-
+        
+        self.dp = nn.Dropout(p=0.3)
+        
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
         out = F.relu(self.bn1(self.fc1(out)))
+        out = self.dp(out)
         out = F.relu(self.bn2(self.fc2(out)))
+        out = self.dp(out)
         out = self.fc3(out)
         return out
 
