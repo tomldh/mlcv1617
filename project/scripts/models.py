@@ -8,7 +8,7 @@ cfg = {
     'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-    'VGG13_m': [2, 2, 'M', 8, 8, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
+    'VGG13_m': [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
     'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
     'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M']
 }
@@ -31,25 +31,25 @@ class CellVGG(nn.Module):
         self.features = self._make_layers(cfg[vgg_name], ch)
 
         if vgg_name == 'VGG13_m':
-            self.fc1 = nn.Linear(4096, 1024)
-            self.bn1 = nn.BatchNorm1d(1024)
-            self.fc2 = nn.Linear(1024, 256)
-            self.bn2 = nn.BatchNorm1d(256)
-            self.fc3 = nn.Linear(256, 2)
+            self.fc1 = nn.Linear(4096, 512)
+            self.bn1 = nn.BatchNorm1d(512)
+            self.fc2 = nn.Linear(512, 32)
+            self.bn2 = nn.BatchNorm1d(32)
+            self.fc3 = nn.Linear(32, 2)
         
         elif vgg_name == 'VGG13':
             self.fc1 = nn.Linear(32768, 4096)
             self.bn1 = nn.BatchNorm1d(4096)
-            self.fc2 = nn.Linear(4096, 512)
-            self.bn2 = nn.BatchNorm1d(512)
-            self.fc3 = nn.Linear(1000, 2)
+            self.fc2 = nn.Linear(4096, 1024)
+            self.bn2 = nn.BatchNorm1d(1024)
+            self.fc3 = nn.Linear(1024, 2)
         
         elif vgg_name == 'C1':
-            self.fc1 = nn.Linear(8192, 2048)
-            self.bn1 = nn.BatchNorm1d(2048)
-            self.fc2 = nn.Linear(2048, 512)
-            self.bn2 = nn.BatchNorm1d(512)
-            self.fc3 = nn.Linear(512, 2)
+            self.fc1 = nn.Linear(8192, 512)
+            self.bn1 = nn.BatchNorm1d(512)
+            self.fc2 = nn.Linear(512, 32)
+            self.bn2 = nn.BatchNorm1d(32)
+            self.fc3 = nn.Linear(32, 2)
         
         elif vgg_name == 'C2':
             self.fc1 = nn.Linear(16384, 2048)
@@ -58,15 +58,15 @@ class CellVGG(nn.Module):
             self.bn2 = nn.BatchNorm1d(256)
             self.fc3 = nn.Linear(256, 2)
         
-        self.dp = nn.Dropout(p=0.3)
+        #self.dp = nn.Dropout(p=0.3)
         
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
         out = F.relu(self.bn1(self.fc1(out)))
-        out = self.dp(out)
+        #out = self.dp(out)
         out = F.relu(self.bn2(self.fc2(out)))
-        out = self.dp(out)
+        #out = self.dp(out)
         out = self.fc3(out)
         return out
 
