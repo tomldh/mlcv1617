@@ -58,15 +58,15 @@ class CellVGG(nn.Module):
             self.bn2 = nn.BatchNorm1d(256)
             self.fc3 = nn.Linear(256, 2)
         
-        #self.dp = nn.Dropout(p=0.3)
+        self.dp = nn.Dropout(p=0.5)
         
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
-        out = F.relu(self.bn1(self.fc1(out)))
-        #out = self.dp(out)
-        out = F.relu(self.bn2(self.fc2(out)))
-        #out = self.dp(out)
+        out = F.relu(self.fc1(out))
+        out = self.dp(out)
+        out = F.relu(self.fc2(out))
+        out = self.dp(out)
         out = self.fc3(out)
         return out
 

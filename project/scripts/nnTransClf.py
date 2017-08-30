@@ -243,7 +243,7 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=F
     history['train_loss'].append(running_loss)
     history['train_acc'].append(running_acc)
     
-    logMsg('\ttrn_loss: {0:.3f}, trn_acc: {1:.3f}'.format(running_loss, running_acc), use_log)
+    logMsg('\ttrn_loss: {0:.3f}, trn_acc: {1:.3f}, total samples: {2}'.format(running_loss, running_acc, total), use_log)
 
 
 def validate(epoch, net, lossFcn, loader, history, use_cuda=False, use_log=False):
@@ -278,7 +278,7 @@ def validate(epoch, net, lossFcn, loader, history, use_cuda=False, use_log=False
     history['val_loss'].append(running_loss)
     history['val_acc'].append(running_acc)
         
-    logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}'.format(running_loss, running_acc), use_log)
+    logMsg('\tval_loss: {0:.3f}, val_acc: {1:.3f}, total samples: {2}'.format(running_loss, running_acc, total), use_log)
 
 def test(net, lossFcn, loader, use_cuda=False, use_log=False):
     
@@ -309,7 +309,7 @@ def test(net, lossFcn, loader, use_cuda=False, use_log=False):
     running_loss /= (i+1)
     running_acc = correct / total
         
-    logMsg('Number of samples: {0}, Test accuracy: {1:.3f}'.format(i+1, running_acc), use_log)
+    logMsg('Number of samples: {0}, Test accuracy: {1:.3f}'.format(total, running_acc), use_log)
 
 if __name__ == '__main__':
     
@@ -319,8 +319,8 @@ if __name__ == '__main__':
     parser.add_argument('--learning-rate', '-lr', default=0.001, type=float, dest='lr', help='learning rate')
     parser.add_argument('--checkpoint', '-cp', default='', type=str, dest='checkpoint', help='resume from given checkpoint')
     parser.add_argument('--no-cuda', default=True, action='store_false', dest='cuda', help='do not use cuda')
-    parser.add_argument('--train-batch-size', '-tb', default=4, type=int, dest='train_batch_size', help='training batch size')
-    parser.add_argument('--validate-batch-size', '-vb', default=4, type=int, dest='val_batch_size', help='testing batch size')
+    parser.add_argument('--train-batch-size', '-tb', default=1, type=int, dest='train_batch_size', help='training batch size')
+    parser.add_argument('--validate-batch-size', '-vb', default=1, type=int, dest='val_batch_size', help='testing batch size')
     parser.add_argument('--epochs', default=6, type=int, dest='epochs', help='number of training epochs')
     parser.add_argument('--optimizer', '-o', default='SGD', type=str, dest='optimizer', help='optimzer')
     parser.add_argument('--no-log', default=True, action='store_false', dest='log', help='no logging')
@@ -335,6 +335,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-test', default=True, action='store_false', dest='test', help='do not perform testing')
     parser.add_argument('--test-data', '-t', default='data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c.h5', type=str, dest='testFile', help='name of test file')
     parser.add_argument('--channels', '-c', default = 2, type=int, dest='channels', help='number of channels of an sample')
+    parser.add_argument('--valdata', '-v', default='data/Fluo-N2DH-SIM-02-samples-2017-08-22-shuffled-2c.h5', type=str, dest='valDataFile', help='name of val file')
     
     ''' initialize variables '''
     args = parser.parse_args()
@@ -374,11 +375,11 @@ if __name__ == '__main__':
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = CellDataset(args.dataFile, '.', train=True, split = 0.75, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    trainset = CellDataset(args.dataFile, '.', train=True, split = 1, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
     
     trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
-    valset = CellDataset(args.dataFile, '.', train=False, split = 0.75, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    valset = CellDataset(args.valDataFile, '.', train=False, split = 0, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
 
     valloader = DataLoader(valset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
