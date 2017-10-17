@@ -32,6 +32,7 @@ import time
 
 from utility import *
 from models import *
+from FlowNetS import *
 
 class CellDataset(Dataset):
     
@@ -375,21 +376,24 @@ if __name__ == '__main__':
     # load data and perform transformation
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
     
-    trainset = CellDataset(args.dataFile, '.', train=True, split = 1, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    trainset = CellDataset(args.dataFile, '.', train=True, split = 1, transform=transforms.Compose([ToTensor()])) #
     
     trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
-    valset = CellDataset(args.valDataFile, '.', train=False, split = 0, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    valset = CellDataset(args.valDataFile, '.', train=False, split = 0, transform=transforms.Compose([ToTensor()])) #
 
     valloader = DataLoader(valset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
-    testset = CellDataset(args.testFile, '.', train=False, split = 0, transform=transforms.Compose([SubtractMean(128), ToTensor()])) #
+    testset = CellDataset(args.testFile, '.', train=False, split = 0, transform=transforms.Compose([ToTensor()])) #
 
     testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
     
     displaySample(set=trainset, index=0, use_gui=False)
     
     lossFcn = nn.CrossEntropyLoss() #loss function
+    
+    
+        
     
     ''' load already trained model '''
     if args.checkpoint:
@@ -409,7 +413,12 @@ if __name__ == '__main__':
             
         if chkpt['arch_cuda']:
             net.cpu()
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
+            
+        if args.optimizer == 'SGD':
+            optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
+        elif args.optimizer == 'ADAM':
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, beta=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
         
@@ -424,10 +433,16 @@ if __name__ == '__main__':
         
     else:
         #net = Net()
-        net = CellVGG(args.arch, args.channels)
+        #net = CellVGG(args.arch, args.channels)
+        net = FlowNetS(batchNorm=True)
         net.apply(weights_init)
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd) #define how to update gradient
-        netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
+        
+        if args.optimizer == 'SGD':
+            optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
+        elif args.optimizer == 'ADAM':
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, beta=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        
+        netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()} 
     
     ''' network info '''
     net.printInfo(args.log)
