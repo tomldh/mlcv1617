@@ -32,7 +32,7 @@ import time
 
 from utility import *
 from models import *
-from FlowNetS import *
+#from FlowNetS import *
 
 class CellDataset(Dataset):
     
@@ -417,7 +417,7 @@ if __name__ == '__main__':
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
         elif args.optimizer == 'ADAM':
-            optimizer = optim.Adam(net.parameters(), lr=args.lr, beta=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
@@ -433,14 +433,14 @@ if __name__ == '__main__':
         
     else:
         #net = Net()
-        #net = CellVGG(args.arch, args.channels)
-        net = FlowNetS(batchNorm=True)
+        net = CellVGG(args.arch, args.channels)
+        #net = FlowNetS(batchNorm=True)
         net.apply(weights_init)
         
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
         elif args.optimizer == 'ADAM':
-            optimizer = optim.Adam(net.parameters(), lr=args.lr, beta=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()} 
     

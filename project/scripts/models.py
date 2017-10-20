@@ -10,7 +10,8 @@ cfg = {
     'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
     'VGG13_m': [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
     'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
-    'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M']
+    'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M'],
+    'MT' : [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M']
 }
 
 
@@ -57,8 +58,14 @@ class CellVGG(nn.Module):
             self.fc2 = nn.Linear(2048, 256)
             self.bn2 = nn.BatchNorm1d(256)
             self.fc3 = nn.Linear(256, 2)
-        
-        self.dp = nn.Dropout(p=0.5)
+
+        elif vgg_name == 'MT':
+            self.fc1 = nn.Linear(16384, 1024)
+            self.fc2 = nn.Linear(1024, 256)
+            self.fc3 = nn.Linear(256, 2)
+
+
+        self.dp = nn.Dropout(p=0.3)
         
     def forward(self, x):
         out = self.features(x)
