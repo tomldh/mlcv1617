@@ -66,6 +66,12 @@ class CellDataset(Dataset):
         
         images = f['images'][index]
         labels = f['labels'][index]
+        '''
+        print('item index: ', index)
+        print('item shape: ', images.shape)
+        print('item0 min: ', np.amin(images[0][:]), ', max: ', np.amax(images[0][:]))
+        print('item1 min: ', np.amin(images[1][:]), ', max: ', np.amax(images[1][:]))
+        '''
         f.close()
         
         sample = {'images':images, 'labels':labels, 'index':index}
@@ -112,10 +118,10 @@ def showImages(sample, use_gui):
     images = images.numpy()
     
     images = images.transpose((0, 2, 3, 1))
-    
+    # watch out for channel, here assume, (channel, width, height, depth)
     print('image dimension: {0}, {1}'.format(images.shape[1], images.shape[2]) )
-    print('mininum: ', np.min(images[0, :, :, 0]))
-    print('maximum: ', np.max(images[0, :, :, 0]))
+    print('mininum: ', np.amin(images[0, :, :, 0]))
+    print('maximum: ', np.amax(images[0, :, :, 0]))
     
     
     assert images.ndim == 4
@@ -272,6 +278,7 @@ def validate(epoch, net, lossFcn, loader, history, use_cuda=False, use_log=False
         
         total += labels.data.size(0)
         correct += (predicted == labels.data).sum()
+        #print('total: ', total, ', correct: ', correct)
 
     running_loss /= (i+1)
     running_acc = correct / total
@@ -305,7 +312,8 @@ def test(net, lossFcn, loader, use_cuda=False, use_log=False):
         _, predicted = torch.max(outputs.data, 1)
         
         total += labels.data.size(0)
-        correct += (predicted == labels.data).sum()
+        correct += predicted.eq(labels.data).cpu().sum()
+        #print('total: ', total, ', correct: ', correct)
 
     running_loss /= (i+1)
     running_acc = correct / total
@@ -378,7 +386,7 @@ if __name__ == '__main__':
     
     trainset = CellDataset(args.dataFile, '.', train=True, split = 1, transform=transforms.Compose([ToTensor()])) #
     
-    trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
+    trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=False, num_workers=2)
     
     valset = CellDataset(args.valDataFile, '.', train=False, split = 0, transform=transforms.Compose([ToTensor()])) #
 
@@ -386,7 +394,7 @@ if __name__ == '__main__':
     
     testset = CellDataset(args.testFile, '.', train=False, split = 0, transform=transforms.Compose([ToTensor()])) #
 
-    testloader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=2)
+    testloader = DataLoader(testset, batch_size=args.val_batch_size, shuffle=False, num_workers=2)
     
     displaySample(set=trainset, index=0, use_gui=False)
     
@@ -410,6 +418,8 @@ if __name__ == '__main__':
         if args.test:
             logMsg('Perform testing on: {0}'.format(args.testFile), args.log)
             test(net, lossFcn, testloader, chkpt['arch_cuda'], args.log)
+            #netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()}
+            #validate(0, net, lossFcn, valloader, netHist, chkpt['arch_cuda'], args.log)
             
         if chkpt['arch_cuda']:
             net.cpu()

@@ -11,7 +11,8 @@ cfg = {
     'VGG13_m': [8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 64, 64, 'M'],
     'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
     'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M'],
-    'MT' : [2, 2, 'M', 8, 8, 'M', 32, 32, 'M', 64, 64, 'M']
+    'MT' : [2, 2, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M'],
+    'MT2' : [2, 2, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M']
 }
 
 
@@ -60,7 +61,14 @@ class CellVGG(nn.Module):
             self.fc3 = nn.Linear(256, 2)
 
         elif vgg_name == 'MT':
-            self.fc1 = nn.Linear(16384, 1024)
+            self.fc1 = nn.Linear(8192, 1024)
+            self.bn1 = nn.BatchNorm1d(1024)
+            self.fc2 = nn.Linear(1024, 256)
+            self.bn2 = nn.BatchNorm1d(256)
+            self.fc3 = nn.Linear(256, 2)
+            
+        elif vgg_name == 'MT2':
+            self.fc1 = nn.Linear(2048, 1024)
             self.bn1 = nn.BatchNorm1d(1024)
             self.fc2 = nn.Linear(1024, 256)
             self.bn2 = nn.BatchNorm1d(256)
@@ -72,9 +80,11 @@ class CellVGG(nn.Module):
     def forward(self, x):
         out = self.features(x)
         out = out.view(out.size(0), -1)
-        out = F.relu(self.fc1(out))
+        out = F.relu(self.bn1(self.fc1(out)))
+        #out = F.relu(self.fc1(out))
         out = self.dp(out)
-        out = F.relu(self.fc2(out))
+        #out = F.relu(self.fc2(out))
+        out = F.relu(self.bn2(self.fc2(out)))
         out = self.dp(out)
         out = self.fc3(out)
         return out
