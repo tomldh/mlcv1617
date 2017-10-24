@@ -12,7 +12,8 @@ cfg = {
     'C1' : [16, 16, 'M', 32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 128, 128, 'M'],
     'C2' : [32, 32, 'M', 64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 256, 256, 'M'],
     'MT' : [2, 2, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M'],
-    'MT2' : [2, 2, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M']
+    'MT2' : [2, 2, 'M', 8, 8, 'M', 16, 16, 'M', 32, 32, 'M', 32, 32, 'M'],
+    'MT3' : [2, 2, 'M', 4, 4, 'M', 8, 8, 'M', 16, 16, 'M', 16, 16, 'M']
 }
 
 
@@ -73,6 +74,13 @@ class CellVGG(nn.Module):
             self.fc2 = nn.Linear(1024, 256)
             self.bn2 = nn.BatchNorm1d(256)
             self.fc3 = nn.Linear(256, 2)
+            
+        elif vgg_name == 'MT3':
+            self.fc1 = nn.Linear(1024, 256)
+            self.bn1 = nn.BatchNorm1d(256)
+            self.fc2 = nn.Linear(256, 32)
+            self.bn2 = nn.BatchNorm1d(32)
+            self.fc3 = nn.Linear(32, 2)
 
 
         self.dp = nn.Dropout(p=0.3)
