@@ -386,7 +386,7 @@ if __name__ == '__main__':
     
     trainset = CellDataset(args.dataFile, '.', train=True, split = 1, transform=transforms.Compose([ToTensor()])) #
     
-    trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=False, num_workers=2)
+    trainloader = DataLoader(trainset, batch_size=args.train_batch_size, shuffle=True, num_workers=2)
     
     valset = CellDataset(args.valDataFile, '.', train=False, split = 0, transform=transforms.Compose([ToTensor()])) #
 
@@ -426,8 +426,8 @@ if __name__ == '__main__':
             
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-        elif args.optimizer == 'ADAM':
-            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        elif args.optimizer == 'LBFGS':
+            optimizer = optim.LBFGS(net.parameters(), lr=args.lr) #optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
@@ -449,8 +449,8 @@ if __name__ == '__main__':
         
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-        elif args.optimizer == 'ADAM':
-            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        elif args.optimizer == 'LBFGS':
+            optimizer = optim.LBFGS(net.parameters(), lr=args.lr) #optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()} 
     
