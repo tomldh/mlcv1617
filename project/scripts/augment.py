@@ -16,6 +16,7 @@ from skimage.util import random_noise
 from skimage import transform
 from skimage.transform import AffineTransform
 from skimage import transform as tf
+import scipy.misc as misc
 
 
 
@@ -27,7 +28,15 @@ def normalization(input, mask):
     
     inputMasked = inputMasked_0[0:266, 0:266, :]
     
+    inputMaskedTmp = misc.imresize(inputMasked_0[:,:,0], (266, 266))
+    
+    inputMasked[:,:,0] = inputMaskedTmp
+    
     inputNonZero = inputMasked[numpy.nonzero(inputMasked)]
+    
+    if inputNonZero.shape[0] == 0:
+        print('zero mask')
+        return inputMasked
     
     inputMean = numpy.mean(inputNonZero[:])
     
@@ -60,22 +69,23 @@ def normalization(input, mask):
 
 if __name__ == '__main__':
     
-    showFlag = True
-    ops = { 'origin' : 1,
+    showFlag = False
+    ops = { 'origin' : 0,
             'fliph' : 0,
             'flipv' : 0,
             'gauss1' : 0,
             'gauss3' : 0,
             'noise' : 0,
-            'rot+10' : 1,
+            'rot+10' : 0,
             'tra+10' : 0,
-            'rot-10' : 1,
-            'tra-10' : 0 }
+            'rot-10' : 0,
+            'tra-10' : 0,
+            'overlay' : 1 }
     
     random.seed(10)
     
-    f = h5py.File('../data/Fluo-N2DH-SIM-01-samples-2017-08-04.h5', 'r')
-    fop = h5py.File('../data/Fluo-N2DH-SIM-01-samples-2017-08-04-shuffled-2c-aug.h5', 'w')
+    f = h5py.File('../data/Fluo-N2DH-SIM-06-samples-2017-08-22.h5', 'r')
+    fop = h5py.File('../data/test-normOL.h5', 'w')
     
     indices = list(range(f['images'].shape[0]))
     random.shuffle(indices)
@@ -90,7 +100,7 @@ if __name__ == '__main__':
         
         img1a = f['images'][i][0].astype(numpy.float64) #original
         img2a = f['images'][i][1].astype(numpy.float64) #original
-        
+        print(i)
         if showFlag:
             plt.figure()
             plt.imshow(img1a[:,:,0], cmap='gray')
@@ -114,7 +124,9 @@ if __name__ == '__main__':
             plt.imshow(img2_255[:,:,0], cmap='gray')
         
         if ops['origin']:
-            imgs_orig = numpy.stack((img1_255, img2_255), axis=0)
+            img1_orig = gaussian_filter(img1_255, sigma = 1)
+            img2_orig = gaussian_filter(img2_255, sigma = 1)
+            imgs_orig = numpy.stack((img1_orig, img2_orig), axis=0)
         
             dimages.append(imgs_orig)
             dlabels.append(f['labels'][i])
@@ -143,8 +155,8 @@ if __name__ == '__main__':
         
         # flipv
         if ops['flipv']:
-            img1_flipv = numpy.flipud(img1_255)
-            img2_flipv = numpy.flipud(img2_255)
+            img1_flipv = gaussian_filter(numpy.flipud(img1_255), sigma=1)
+            img2_flipv = gaussian_filter(numpy.flipud(img2_255), sigma=1)
         
             if showFlag:
                 print('[flipv] img1_shape: {0}, img2_shape: {1}'.format(img1_flipv.shape, img2_flipv.shape))
@@ -200,9 +212,9 @@ if __name__ == '__main__':
         
         # Noise
         if ops['noise']:
-            img1_rn = normalization(random_noise(img1_norm, mode='gaussian', seed=0, var=0.01), img1m)
+            img1_rn = gaussian_filter(normalization(random_noise(img1_norm, mode='gaussian', seed=0, var=0.01), img1m), sigma=1)
             
-            img2_rn = normalization(random_noise(img2_norm, mode='gaussian', seed=0, var=0.01), img2m)
+            img2_rn = gaussian_filter(normalization(random_noise(img2_norm, mode='gaussian', seed=0, var=0.01), img2m), sigma=1)
             
             if showFlag:
                 print('[random noise] img1_shape: {0}, img2_shape: {1}'.format(img1_rn.shape, img2_rn.shape))
@@ -220,8 +232,8 @@ if __name__ == '__main__':
         
         # rotate
         if ops['rot+10']:
-            img1_rot5 = transform.rotate(img1_255, 10)
-            img2_rot5 = transform.rotate(img2_255, 10)
+            img1_rot5 = gaussian_filter(transform.rotate(img1_255, 10), sigma=1)
+            img2_rot5 = gaussian_filter(transform.rotate(img2_255, 10), sigma=1)
             
             if showFlag:
                 print('[rotation 5] img1_shape: {0}, img2_shape: {1}'.format(img1_rot5.shape, img2_rot5.shape))
@@ -239,8 +251,8 @@ if __name__ == '__main__':
         
         # translate
         if ops['tra+10']:
-            img1_trans5 = tf.warp(img1_255, AffineTransform(translation=(10, 10)))
-            img2_trans5 = tf.warp(img2_255, AffineTransform(translation=(10, 10)))
+            img1_trans5 = gaussian_filter(tf.warp(img1_255, AffineTransform(translation=(10, 10))), sigma=1)
+            img2_trans5 = gaussian_filter(tf.warp(img2_255, AffineTransform(translation=(10, 10))), sigma=1)
             
             if showFlag:
                 print('[translation 5] img1_shape: {0}, img2_shape: {1}'.format(img1_trans5.shape, img2_trans5.shape))
@@ -295,6 +307,15 @@ if __name__ == '__main__':
             
             total += 1
         
+        if ops['overlay']:
+            img_overlay = (img1_255+img2_255)/2
+            
+            dimages.append(img_overlay)
+            dlabels.append(f['labels'][i])
+            
+            total += 1
+            
+        
         print('total: ', total, ', cnt: ', cnt, ', i: ', i, ', label: ', f['labels'][i])
         
         cnt += 1
@@ -302,11 +323,16 @@ if __name__ == '__main__':
         if showFlag:
             plt.show()
         
+        
+        
     
     print(cnt)
     print(total)
     
     ishape = (total, 2, 266, 266, 1)
+    
+    if ops['overlay']:
+        ishape = (total, 1, 266, 266, 1)
     print('ishape: ', ishape)
     
     fop.create_dataset('images', ishape, numpy.float64, dimages, compression="gzip", compression_opts=9)

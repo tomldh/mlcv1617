@@ -18,10 +18,12 @@ def plotStatistics(history, use_gui=False, fprefix='', fname=''):
 
     ''' plots '''
     plt.figure()
-    plt.plot(range(len(history['train_loss'])), history['train_loss'], color='r', label='train_loss')
+    plt.plot(range(len(history['train_loss'])), history['train_loss'], color='b', label='train_loss')
+    plt.plot(range(len(history['val_loss'])), history['val_loss'], color='r', label='val_loss')
     plt.title('Training Loss')
     plt.xlabel('epoch')
     plt.ylabel('loss')
+    plt.ylim([0, 1])
     plt.legend(loc=1)
     
     if use_gui:
