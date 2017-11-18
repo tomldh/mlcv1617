@@ -230,20 +230,23 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=F
             
         inputs, labels = Variable(inputs), Variable(labels)
         
-        optim.zero_grad()
+        def closure():
+            optim.zero_grad()
         
-        outputs = net(inputs)
-        loss = lossFcn(outputs, labels)
-        loss.backward()
-        optimizer.step()
-        
-        running_loss += loss.data[0] #loss is a Variable
+            outputs = net(inputs)
+            loss = lossFcn(outputs, labels)
+            loss.backward()
         
         
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.data.size(0)
-        correct += (predicted == labels.data).sum()
-    
+            running_loss += loss.data[0] #loss is a Variable
+        
+        
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.data.size(0)
+            correct += (predicted == labels.data).sum()
+        
+        optimizer.step(closure)
+        
     running_loss /= (i+1)
     running_acc = correct / total
 
