@@ -216,7 +216,7 @@ def displayBatch(loader, index=0, single=True, use_gui=False):
 
 
 def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=False):
-    
+    global running_loss, correct, total
     running_loss = 0.0
     correct = 0
     total = 0
@@ -231,12 +231,12 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=F
         inputs, labels = Variable(inputs), Variable(labels)
         
         def closure():
+            global running_loss, correct, total
             optim.zero_grad()
         
             outputs = net(inputs)
             loss = lossFcn(outputs, labels)
             loss.backward()
-        
         
             running_loss += loss.data[0] #loss is a Variable
         
@@ -244,6 +244,8 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=F
             _, predicted = torch.max(outputs.data, 1)
             total += labels.data.size(0)
             correct += (predicted == labels.data).sum()
+            
+            return loss
         
         optimizer.step(closure)
         
