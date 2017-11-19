@@ -216,7 +216,7 @@ def displayBatch(loader, index=0, single=True, use_gui=False):
 
 
 def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=False):
-    global running_loss, correct, total
+
     running_loss = 0.0
     correct = 0
     total = 0
@@ -230,24 +230,21 @@ def train(epoch, net, optim, lossFcn, loader, history, use_cuda=False, use_log=F
             
         inputs, labels = Variable(inputs), Variable(labels)
         
-        def closure():
-            global running_loss, correct, total
-            optim.zero_grad()
+        optim.zero_grad()
         
-            outputs = net(inputs)
-            loss = lossFcn(outputs, labels)
-            loss.backward()
+        outputs = net(inputs)
+        loss = lossFcn(outputs, labels)
+        loss.backward()
+        optimizer.step()
         
-            running_loss += loss.data[0] #loss is a Variable
+        running_loss += loss.data[0] #loss is a Variable
         
         
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.data.size(0)
-            correct += (predicted == labels.data).sum()
-            
-            return loss
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.data.size(0)
+        correct += (predicted == labels.data).sum()
         
-        optimizer.step(closure)
+        
         
     running_loss /= (i+1)
     running_acc = correct / total
@@ -431,8 +428,8 @@ if __name__ == '__main__':
             
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-        elif args.optimizer == 'LBFGS':
-            optimizer = optim.LBFGS(net.parameters(), lr=args.lr) #optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        elif args.optimizer == 'ADAM':
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         optimizer.load_state_dict(chkpt['optimizer'])
         netHist = chkpt['history']
@@ -454,8 +451,8 @@ if __name__ == '__main__':
         
         if args.optimizer == 'SGD':
             optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.wd)
-        elif args.optimizer == 'LBFGS':
-            optimizer = optim.LBFGS(net.parameters(), lr=args.lr) #optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
+        elif args.optimizer == 'ADAM':
+            optimizer = optim.Adam(net.parameters(), lr=args.lr, betas=(0.9, 0.999), weight_decay=args.wd) #define how to update gradient
         
         netHist = {'train_loss':list(), 'train_acc':list(), 'val_acc':list(), 'val_loss':list()} 
     
